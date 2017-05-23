@@ -1,0 +1,3 @@
+useDynLib('retnfit')
+import(Rmpi,snow)
+export(parallelFit)
