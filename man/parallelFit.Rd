@@ -39,10 +39,8 @@
 }
 \author{Harry A. Stern and Matthew N. McCall}
 \examples{
-??retnfit
-\donttest{
-# need to be run with mpirun
-results <- parallelFit(read.csv('sampledata.csv'),
+
+results <- parallelFit(read.csv('retnfit/data/sampledata.csv'),
                         max_parents=4, 
                         n_cycles=10000,
                         n_write=10,
@@ -66,5 +64,5 @@ print(lowest_temp_results$parents)
 
 print('Outcomes:')
 print(lowest_temp_results$outcomes)
-}
+
 }

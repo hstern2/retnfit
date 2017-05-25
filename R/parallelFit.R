@@ -1,4 +1,4 @@
-callNetworkMonteCarloRwrap <- function(n,
+callNetworkMonteCarloRwrap <- function(i, n,
     n_node,
     experiment_set,
     max_parents,
@@ -10,7 +10,7 @@ callNetworkMonteCarloRwrap <- function(n,
     logfile,
     seed)
 {
-    set.seed(seed + mpi.comm.rank())
+    set.seed(seed + i)
 
     results <- .Call("network_monte_carlo_Rwrap",
         n,
@@ -67,10 +67,11 @@ parallelFit <- function(experiment_set,
         stop(paste("number of experiments must be at most", cap))
     }
 
-    cl <- makeCluster(n_proc, type="MPI")
+    bp_param <- SnowParam(n_proc, type="MPI")
 
-    results <- clusterCall(cl, 
+    results <- bplapply(1:n_proc, 
         callNetworkMonteCarloRwrap,
+        BPPARAM=bp_param,
         n,
         n_node,
         experiment_set,
@@ -83,7 +84,6 @@ parallelFit <- function(experiment_set,
         logfile,
         seed)
 
-    stopCluster(cl)
     mpi.finalize()
 
     results
