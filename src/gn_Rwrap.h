@@ -4,6 +4,8 @@
 #include <R.h>
 #include <Rdefines.h>
 
+SEXP is_MPI_available();
+
 SEXP max_nodes_Rwrap();
 
 SEXP max_experiments_Rwrap();

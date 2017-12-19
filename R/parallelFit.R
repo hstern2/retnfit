@@ -10,6 +10,7 @@ callNetworkMonteCarloRwrap <- function(i, n,
     logfile,
     seed)
 {
+
     set.seed(seed + i)
 
     results <- .Call("network_monte_carlo_Rwrap",
@@ -51,7 +52,6 @@ parallelFit <- function(experiment_set,
     logfile,
     seed)
 {
-    if (n_proc < 2) stop("n_proc must be at least 2")
     if (T_lo <= 0) stop("T_lo must be greater than 0")
     if (T_hi <= T_lo) stop("T_hi must be greater than T_lo")
     if (max_parents < 1) stop("max_parents must be at least 1")
@@ -67,25 +67,52 @@ parallelFit <- function(experiment_set,
         stop(paste("number of experiments must be at most", cap))
     }
 
-    bp_param <- SnowParam(n_proc, type="MPI")
+    if (.Call("is_MPI_available") &&
+        requireNamespace("BiocParallel") && 
+        requireNamespace("Rmpi") && 
+        requireNamespace("snow")) {
 
-    results <- bplapply(1:n_proc, 
-        callNetworkMonteCarloRwrap,
-        BPPARAM=bp_param,
-        n,
-        n_node,
-        experiment_set,
-        max_parents, 
-        n_cycles, 
-        n_write, 
-        T_lo,
-        T_hi,
-        target_score, 
-        logfile,
-        seed)
+        if (n_proc < 2) stop("n_proc must be at least 2")
 
-    mpi.finalize()
+        bp_param <- BiocParallel::SnowParam(n_proc, type="MPI")
+        
+        results <- BiocParallel::bplapply(1:n_proc, 
+            callNetworkMonteCarloRwrap,
+            BPPARAM=bp_param,
+            n,
+            n_node,
+            experiment_set,
+            max_parents, 
+            n_cycles, 
+            n_write, 
+            T_lo,
+            T_hi,
+            target_score, 
+            logfile,
+            seed)
+
+        Rmpi::mpi.finalize()
+
+    } else {
+        
+        results = list()
+
+        results[[1]] <- callNetworkMonteCarloRwrap(0,
+            n,
+            n_node,
+            experiment_set,
+            max_parents,
+            n_cycles,
+            n_write,
+            T_lo,
+            T_hi,
+            target_score,
+            logfile,
+            seed)
+
+    }
 
     results
 
 }
+

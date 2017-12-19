@@ -42,7 +42,7 @@
 
 results <- parallelFit(read.csv('retnfit/data/sampledata.csv'),
                         max_parents=4, 
-                        n_cycles=10000,
+                        n_cycles=100000,
                         n_write=10,
                         T_lo=0.001,
                         T_hi=1.0,

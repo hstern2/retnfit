@@ -1,3 +1,2 @@
 useDynLib('retnfit')
-import(BiocParallel,Rmpi,snow)
 export(parallelFit)

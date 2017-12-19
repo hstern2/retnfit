@@ -1,10 +1,30 @@
 #include "gn_Rwrap.h"
+
+#ifdef USE_MPI
 #include <mpi.h>
+#endif
+
 #include <assert.h>
 #define MATHLIB_STANDALONE 1
 #include <Rmath.h>
 #include "gn.h"
 #include "util.h"
+
+static SEXP R_logical(int n)
+{
+  SEXP R_n = NEW_LOGICAL(1);
+  *(LOGICAL_POINTER(R_n)) = n;
+  return R_n;
+}
+
+SEXP is_MPI_available()
+{
+#ifdef USE_MPI
+  return R_logical(1);
+#else
+  return R_logical(0);
+#endif
+}
 
 static SEXP R_int(int n)
 {
@@ -66,9 +86,15 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   network_init(&net, e.n_node, max_parents);
 
   char fname[1024];
+
+#ifdef USE_MPI
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   sprintf(fname, "%s.%d", outfile, rank);
+#else
+  sprintf(fname, "%s", outfile);
+#endif
+
   FILE *f = safe_fopen(fname, "w");
 
   SEXP R_unnormalized_score = PROTECT(NEW_NUMERIC(1));
@@ -138,7 +164,9 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 
   network_delete(&net);
   
+#ifdef USE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
-  
+#endif  
+
   return(results);
 }

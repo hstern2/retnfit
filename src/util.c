@@ -6,8 +6,6 @@
 #include <ctype.h>
 #include <R.h>
 
-#define USE_MPI
-
 #ifdef USE_MPI
 #include <mpi.h>
 #endif

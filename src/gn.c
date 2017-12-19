@@ -9,8 +9,6 @@
 #define ADJUST_MOVE_SIZE_INTERVAL 7001
 #define EXCHANGE_INTERVAL 1000
 
-#define USE_MPI 1
-
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
@@ -117,8 +115,6 @@ static int intcmp(const void *a, const void *b)
     return 1;
   return 0;
 }
-
-static const char whitespace[] = " \t\n";
 
 void network_write(FILE *f, const network_t n)
 {
@@ -396,7 +392,7 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
       for (i_outcome = -1; i_outcome <= 1; i_outcome++)
 	fprintf(f, "%d, %d, %d, %.1f, %d\n",
 		i_exp, i_node, i_outcome,
-		fabs(traj.steady_state[i_node] - i_outcome),
+		fabs((double) traj.steady_state[i_node] - (double) i_outcome),
 		traj.is_persistent[i_node] && traj.steady_state[i_node] == i_outcome);
     }
   }
@@ -557,6 +553,7 @@ double network_monte_carlo(network_t n,
   unsigned long i;
   for (i = 1; i <= n_cycles; i++) {
 #ifndef USE_MPI
+    /* if no MPI available, do annealing instead of replica exchange */
     T = T_hi * pow(T_lo/T_hi, fraction(i-1, n_cycles-1));
 #endif
     copy_network(&t0, n);

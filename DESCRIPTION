@@ -10,8 +10,8 @@ Description: This package provides an implementation of the
     replica exchange Monte Carlo algorithm for fitting 
     ternary network models of gene regulatory networks.
 License: GPL (>= 2)
-Imports: BiocParallel, Rmpi, snow
+Suggests: BiocParallel, Rmpi, snow, testthat
 NeedsCompilation: yes
 biocViews: Software, CellBiology, GraphAndNetwork, GeneTarget, Network
-Packaged: 2017-05-25 18:47:57 UTC; hstern2
+Packaged: 2017-12-19 16:52:19 UTC; hstern2
 RoxygenNote: 6.0.1

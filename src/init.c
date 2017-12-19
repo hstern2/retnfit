@@ -4,6 +4,7 @@
 #define CALLDEF(name, n) { #name, (DL_FUNC) &name, n }
 
 const static R_CallMethodDef R_CallDef[] = {
+  CALLDEF(is_MPI_available, 0),
   CALLDEF(max_nodes_Rwrap, 0),
   CALLDEF(max_experiments_Rwrap, 0),
   CALLDEF(network_monte_carlo_Rwrap, 14),
