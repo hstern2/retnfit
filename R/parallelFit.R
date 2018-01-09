@@ -76,7 +76,7 @@ parallelFit <- function(experiment_set,
 
         bp_param <- BiocParallel::SnowParam(n_proc, type="MPI")
         
-        results <- BiocParallel::bplapply(1:n_proc, 
+        results <- BiocParallel::bplapply(seq_len(n_proc), 
             callNetworkMonteCarloRwrap,
             BPPARAM=bp_param,
             n,
