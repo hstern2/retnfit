@@ -1,8 +1,9 @@
 Package: retnfit
 Type: Package
-Title: Fitting ternary network models using replica exchange Monte Carl
+Title: Fitting ternary network models using replica exchange Monte
+        Carlo
 Version: 0.99.0
-Date: 2017-03-04
+Date: 2018-01-09
 Author: Harry A. Stern <hstern2@ur.rochester.edu>, 
     Matthew N. McCall <mccallm@gmail.com>
 Maintainer: Harry A. Stern <hstern2@ur.rochester.edu>
@@ -13,5 +14,5 @@ License: GPL (>= 2)
 Suggests: BiocParallel, Rmpi, snow, testthat
 NeedsCompilation: yes
 biocViews: Software, CellBiology, GraphAndNetwork, GeneTarget, Network
-Packaged: 2017-12-19 16:52:19 UTC; hstern2
+Packaged: 2018-01-09 16:53:53 UTC; hstern2
 RoxygenNote: 6.0.1
