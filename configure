@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#from Rmpi 0.6-6 by Hao Yu
-#
+#modified from configure distribued with Rmpi 0.6-6 by Hao Yu
+
 #Rmpi is an R package providing an interface to MPI (Message-Passing Interface) 
 #API calls with interactive R slave functionalities. 
 #
