@@ -3793,7 +3793,7 @@ PKG_CFLAGS=""
 MSG="No OpenMPI major version 1 detected - creating Makevars for serial version"
 
 if test "$MPITYPE" = "OPENMPI"; then
-  OMPI_MAJOR_VERSION=`grep 'define OMPI_MAJOR_VERSION' ${MPI_INCLUDE_PATH}/mpi.h`
+  OMPI_MAJOR_VERSION=`grep 'define OMPI_MAJOR_VERSION' ${MPI_INCLUDE_PATH}/mpi.h | awk '{print $3}'`
   $as_echo "OMPI_MAJOR_VERSION: $OMPI_MAJOR_VERSION"
   if test "$OMPI_MAJOR_VERSION" = "1"; then
     PKG_CFLAGS="-DUSE_MPI -I${MPI_INCLUDE_PATH} ${MPI_INCL2} ${MPI_DEFS} -D${MPITYPE}"
