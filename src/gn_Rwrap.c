@@ -10,35 +10,21 @@
 #include "gn.h"
 #include "util.h"
 
-static SEXP R_logical(int n)
-{
-  SEXP R_n = NEW_LOGICAL(1);
-  *(LOGICAL_POINTER(R_n)) = n;
-  return R_n;
-}
-
 SEXP is_MPI_available()
 {
 #ifdef USE_MPI
-  return R_logical(1);
+  return Rf_ScalarLogical(1);
 #else
-  return R_logical(0);
+  return Rf_ScalarLogical(0);
 #endif
 }
 
-static SEXP R_int(int n)
-{
-  SEXP R_n = NEW_INTEGER(1);
-  *(INTEGER_POINTER(R_n)) = n;
-  return R_n;
-}
-
 SEXP max_nodes_Rwrap() { 
-  return R_int(MAX_NODES); 
+  return Rf_ScalarInteger(MAX_NODES); 
 }
 
 SEXP max_experiments_Rwrap() { 
-  return R_int(MAX_EXPERIMENTS);
+  return Rf_ScalarInteger(MAX_EXPERIMENTS);
 }
 
 SEXP network_monte_carlo_Rwrap(SEXP R_n,

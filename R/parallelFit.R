@@ -52,67 +52,55 @@ parallelFit <- function(experiment_set,
     logfile,
     seed)
 {
-    if (T_lo <= 0) stop("T_lo must be greater than 0")
-    if (T_hi <= T_lo) stop("T_hi must be greater than T_lo")
-    if (max_parents < 1) stop("max_parents must be at least 1")
+    stopifnot(T_lo > 0)
+    stopifnot(T_hi > T_lo)
+    stopifnot(max_parents >= 1)
 
     n <- nrow(experiment_set)
     n_node <- max(experiment_set$i_node)+1
 
-    cap = .Call("max_nodes_Rwrap")
-    if (n_node > cap) stop(paste("number of nodes must be at most", cap))
+    max_nodes = .Call("max_nodes_Rwrap")
+    stopifnot(n_node <= max_nodes)
 
-    cap = .Call("max_experiments_Rwrap")
-    if (max(experiment_set$i_exp)+1 > cap) {
-        stop(paste("number of experiments must be at most", cap))
-    }
+    max_experiments = .Call("max_experiments_Rwrap")
+    number_of_experiments = max(experiment_set$i_exp)+1
+    stopifnot(number_of_experiments <= max_experiments)
 
     if (.Call("is_MPI_available") &&
         requireNamespace("BiocParallel") && 
         requireNamespace("Rmpi") && 
         requireNamespace("snow")) {
 
-        if (n_proc < 2) stop("n_proc must be at least 2")
-
+        stopifnot(n_proc >= 2)
+        using_MPI = TRUE
         bp_param <- BiocParallel::SnowParam(n_proc, type="MPI")
-        
-        results <- BiocParallel::bplapply(seq_len(n_proc), 
-            callNetworkMonteCarloRwrap,
-            BPPARAM=bp_param,
-            n,
-            n_node,
-            experiment_set,
-            max_parents, 
-            n_cycles, 
-            n_write, 
-            T_lo,
-            T_hi,
-            target_score, 
-            logfile,
-            seed)
-
-        Rmpi::mpi.finalize()
 
     } else {
+
+        using_MPI = FALSE   
+        bp_param <- BiocParallel::SerialParam()
+
+    }
         
-        results = list()
+    results <- BiocParallel::bplapply(seq_len(n_proc), 
+        callNetworkMonteCarloRwrap,
+        BPPARAM=bp_param,
+        n,
+        n_node,
+        experiment_set,
+        max_parents, 
+        n_cycles, 
+        n_write, 
+        T_lo,
+        T_hi,
+        target_score, 
+        logfile,
+        seed)
 
-        results[[1]] <- callNetworkMonteCarloRwrap(0,
-            n,
-            n_node,
-            experiment_set,
-            max_parents,
-            n_cycles,
-            n_write,
-            T_lo,
-            T_hi,
-            target_score,
-            logfile,
-            seed)
-
+    if (using_MPI) {
+        Rmpi::mpi.finalize()
     }
 
     results
 
 }
-
