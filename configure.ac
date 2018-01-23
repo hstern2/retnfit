@@ -149,44 +149,44 @@ if test -z "$MPI_ROOT" ; then
 fi
 
 if test -n "$MPI_ROOT"; then
-	#guess MPITYPE if it is unknown and user supplies MPI_ROOT
-	if test $MPITYPE = "UNKNOWN" ; then
-		if test -d ${MPI_ROOT}/openmpi; then
-			MPITYPE="OPENMPI"
-		elif test -d ${MPI_ROOT}/lib/openmpi; then
-			MPITYPE="OPENMPI"
-		elif test -d ${MPI_ROOT}/lib64/openmpi; then
-		 	MPITYPE="OPENMPI"
-		elif test -f ${MPI_ROOT}/lib/liblam.so; then
-		 	MPITYPE="LAM"
-		elif test -d ${MPI_ROOT}/lib/lam; then
-		 	MPITYPE="LAM"
-		elif test -d ${MPI_ROOT}/lib64/lam; then
-		 	MPITYPE="LAM"
-		elif test -f ${MPI_ROOT}/lib/libmpich.a; then
-		 	MPITYPE="MPICH"
-		elif test -f ${MPI_ROOT}/lib64/libmpich.a; then
-		 	MPITYPE="MPICH"
-		fi
-	fi
+        #guess MPITYPE if it is unknown and user supplies MPI_ROOT
+        if test $MPITYPE = "UNKNOWN" ; then
+                if test -d ${MPI_ROOT}/openmpi; then
+                        MPITYPE="OPENMPI"
+                elif test -d ${MPI_ROOT}/lib/openmpi; then
+                        MPITYPE="OPENMPI"
+                elif test -d ${MPI_ROOT}/lib64/openmpi; then
+                         MPITYPE="OPENMPI"
+                elif test -f ${MPI_ROOT}/lib/liblam.so; then
+                         MPITYPE="LAM"
+                elif test -d ${MPI_ROOT}/lib/lam; then
+                         MPITYPE="LAM"
+                elif test -d ${MPI_ROOT}/lib64/lam; then
+                         MPITYPE="LAM"
+                elif test -f ${MPI_ROOT}/lib/libmpich.a; then
+                         MPITYPE="MPICH"
+                elif test -f ${MPI_ROOT}/lib64/libmpich.a; then
+                         MPITYPE="MPICH"
+                fi
+        fi
     echo "Trying to find mpi.h ..."
     if test -f ${MPI_ROOT}/include/mpi.h; then
          echo "Found in ${MPI_ROOT}/include"
-         MPI_INCLUDE_PATH="${MPI_ROOT}/include"		  
+         MPI_INCLUDE_PATH="${MPI_ROOT}/include"
     elif test -f ${MPI_ROOT}/include/openmpi/mpi.h; then
          echo "Found in ${MPI_ROOT}/include/openmpi"
          MPI_INCLUDE_PATH="${MPI_ROOT}/include/openmpi"
     elif test -f ${MPI_ROOT}/include/lam/mpi.h; then
          echo "Found in ${MPI_ROOT}/include/lam"
          MPI_INCLUDE_PATH="${MPI_ROOT}/include/lam"
-    else 
+    else
          echo "Cannot find mpi.h header file"
          echo "Please use --with-mpi=/path/to/mpi or specify the environment variable MPI_ROOT"
          exit 1
     fi
 else
     AC_CHECK_HEADER(mpi.h,, AC_MSG_ERROR(["Cannot find mpi.h header file"]))
-fi 
+fi
 
 echo "Trying to find libmpi.so or libmpich.a ..."
 if test -f ${MPI_ROOT}/lib/libmpi.so; then
@@ -204,29 +204,29 @@ elif test -f ${MPI_ROOT}/lib64/openmpi/libmpi.so; then
         MPI_LIBPATH="${MPI_ROOT}/lib64/openmpi"
 elif test -f ${MPI_ROOT}/lib64/libmpi.so; then
         echo "Found libmpi in ${MPI_ROOT}/lib64"
-        MPI_LIBPATH="${MPI_ROOT}/lib64"		
+        MPI_LIBPATH="${MPI_ROOT}/lib64"
 elif test -f ${MPI_ROOT}/lib/lam/libmpi.so; then
         echo "Found libmpi in ${MPI_ROOT}/lib/lam"
         MPI_LIBPATH="${MPI_ROOT}/lib/lam"
-	MPI_INCL2="-I${MPI_INCLUDE_PATH}/32"
+        MPI_INCL2="-I${MPI_INCLUDE_PATH}/32"
 elif test -f ${MPI_ROOT}/lib64/lam/libmpi.so; then
         echo "Found libmpi in ${MPI_ROOT}/lib64/lam"
         MPI_LIBPATH="${MPI_ROOT}/lib64/lam"
-	MPI_INCL2="-I${MPI_INCLUDE_PATH}/64"
+        MPI_INCL2="-I${MPI_INCLUDE_PATH}/64"
 elif test -f ${MPI_ROOT}/lib/libmpich.so; then
         echo "Found libmpich in ${MPI_ROOT}/lib"
         MPI_LIBPATH="${MPI_ROOT}/lib"
-	AC_CHECK_DECLS([MPICH2, MPICH2],[  MPI_DEFS="-DMPI2" ],, 
-		[#include <mpi.h>])
+        AC_CHECK_DECLS([MPICH2, MPICH2],[  MPI_DEFS="-DMPI2" ],,
+                [#include <mpi.h>])
 elif test -f ${MPI_ROOT}/lib64/libmpich.a; then
         echo "Found libmpich in ${MPI_ROOT}/lib64"
         MPI_LIBPATH="${MPI_ROOT}/lib64"
-	AC_CHECK_DECLS([MPICH2, MPICH2],[  MPI_DEFS="-DMPI2" ],, 
-		[#include <mpi.h>])
+        AC_CHECK_DECLS([MPICH2, MPICH2],[  MPI_DEFS="-DMPI2" ],,
+                [#include <mpi.h>])
 else
     AC_CHECK_LIB(mpi, main, MPI_LIBPATH="${MPI_ROOT}/lib",
-    	[   echo "libmpi not found. exiting..."
-        	exit 1  ]
+            [   echo "libmpi not found. exiting..."
+                exit 1  ]
 )
 fi
 
@@ -238,21 +238,21 @@ if test "$MPITYPE" = "OPENMPI" ; then
 fi
 
 if test "$MPITYPE" = "LAM" ; then
-	echo "Try to find liblam.so ..."
-	if test -f ${MPI_ROOT}/lib/liblam.so; then
+        echo "Try to find liblam.so ..."
+        if test -f ${MPI_ROOT}/lib/liblam.so; then
         echo "Found liblam in ${MPI_ROOT}/lib"
         MPI_LIBPATH="${MPI_ROOT}/lib"
-	elif test -f ${MPI_ROOT}/lib/lam/liblam.so; then
+        elif test -f ${MPI_ROOT}/lib/lam/liblam.so; then
         echo "Found liblam in ${MPI_ROOT}/lib/lam"
         MPI_LIBPATH="${MPI_ROOT}/lib/lam"
-	elif test -f ${MPI_ROOT}/lib64/lam/liblam.so; then
+        elif test -f ${MPI_ROOT}/lib64/lam/liblam.so; then
         echo "Found liblam in ${MPI_ROOT}/lib64/lam"
         MPI_LIBPATH="${MPI_ROOT}/lib64/lam"
-	else
-    	AC_CHECK_LIB(lam, main, []
-    	[   echo "liblam not found. Probably not LAM-MPI"]
-    	)
-	fi    
+        else
+            AC_CHECK_LIB(lam, main, []
+            [   echo "liblam not found. Probably not LAM-MPI"]
+            )
+        fi
 fi
 
 fi dnl end of 'paths not specified'
