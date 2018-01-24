@@ -79,6 +79,7 @@ if test "X$CC" = "X" ; then
 CC="gcc -std=gnu99"
 fi
 
+
 if test -z "$MPI_ROOT" ; then
   for d in /opt/lib /usr/lib /usr /usr/local/lib /usr/local /usr/lib64/mpi/gcc/openmpi; do
     if test -f $d/include/mpi.h && test -d $d/lib/openmpi; then
