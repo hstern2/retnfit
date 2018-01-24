@@ -27,6 +27,12 @@ SEXP max_experiments_Rwrap() {
   return Rf_ScalarInteger(MAX_EXPERIMENTS);
 }
 
+static int SEXP_to_int(SEXP x) { return INTEGER_VALUE(x); }
+static int *SEXP_to_intp(SEXP x) { return INTEGER_POINTER(x); }
+static double SEXP_to_double(SEXP x) { return NUMERIC_VALUE(x); }
+static double *SEXP_to_doublep(SEXP x) { return NUMERIC_POINTER(x); }
+static char *SEXP_to_charp(SEXP x) { return STRING_VALUE(x); }
+
 SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_n_node,
 			       SEXP R_i_exp, 
@@ -43,23 +49,23 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_outfile)
 {
 
-  const int n = INTEGER_VALUE(R_n);
-  const int n_node = INTEGER_VALUE(R_n_node);
-  const int *i_exp = INTEGER_POINTER(R_i_exp);
-  const int *i_node = INTEGER_POINTER(R_i_node);
-  const int *outcome = INTEGER_POINTER(R_outcome);
+  const int n = SEXP_to_int(R_n);
+  const int n_node = SEXP_to_int(R_n_node);
+  const int *i_exp = SEXP_to_intp(R_i_exp);
+  const int *i_node = SEXP_to_intp(R_i_node);
+  const int *outcome = SEXP_to_intp(R_outcome);
 
-  const double *val = NUMERIC_POINTER(R_val);
+  const double *val = SEXP_to_doublep(R_val);
 
-  const int max_parents = INTEGER_VALUE(R_max_parents);
+  const int max_parents = SEXP_to_int(R_max_parents);
 
-  const int *is_perturbation = INTEGER_POINTER(R_is_perturbation);
-  const unsigned long n_cycles = NUMERIC_VALUE(R_n_cycles);
-  const int n_write = INTEGER_VALUE(R_n_write);
-  const double T_lo = NUMERIC_VALUE(R_T_lo);
-  const double T_hi = NUMERIC_VALUE(R_T_hi);
-  const double target_score = NUMERIC_VALUE(R_target_score);
-  const char *outfile = STRING_VALUE(R_outfile);
+  const int *is_perturbation = SEXP_to_intp(R_is_perturbation);
+  const unsigned long n_cycles = SEXP_to_double(R_n_cycles);
+  const int n_write = SEXP_to_int(R_n_write);
+  const double T_lo = SEXP_to_double(R_T_lo);
+  const double T_hi = SEXP_to_double(R_T_hi);
+  const double target_score = SEXP_to_double(R_target_score);
+  const char *outfile = SEXP_to_charp(R_outfile);
 
   struct experiment_set e;
   experiment_set_init(&e, n, i_exp, i_node, outcome, val, is_perturbation);
@@ -84,7 +90,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   FILE *f = safe_fopen(fname, "w");
 
   SEXP R_unnormalized_score = PROTECT(NEW_NUMERIC(1));
-  double *unnormalized_score = NUMERIC_POINTER(R_unnormalized_score);
+  double *unnormalized_score = SEXP_to_doublep(R_unnormalized_score);
   
   *unnormalized_score = network_monte_carlo(&net,
 					    &e,
@@ -95,7 +101,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 					    f, target_score);
   
   SEXP R_normalized_score = PROTECT(NEW_NUMERIC(1));
-  double *normalized_score = NUMERIC_POINTER(R_normalized_score);
+  double *normalized_score = SEXP_to_doublep(R_normalized_score);
   *normalized_score = *unnormalized_score * scale_factor(&e);
   
   network_write_response_from_experiment_set(f, &net, &e);
@@ -110,7 +116,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   fclose(f);
 
   SEXP R_parents = PROTECT(NEW_INTEGER(n_node*max_parents));
-  int *parents = INTEGER_POINTER(R_parents);
+  int *parents = SEXP_to_intp(R_parents);
 
   int i, j;
   for (i = 0; i < n_node; i++)
@@ -118,7 +124,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
       parents[j*n_node+i] = net.parent[i][j];
 
   SEXP R_outcomes = PROTECT(NEW_INTEGER(n_node*three_to_the(max_parents)));
-  int *outcomes = INTEGER_POINTER(R_outcomes);
+  int *outcomes = SEXP_to_intp(R_outcomes);
 
   for (i = 0; i < n_node; i++) {
     int k;
@@ -135,7 +141,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
     int j, k;
     for (j = 0; j < n_rep; j++)
       for (k = 0; k < n_node; k++)
-	INTEGER_POINTER(R_traj)[k*n_rep+j] = t.state[j][k];
+	SEXP_to_intp(R_traj)[k*n_rep+j] = t.state[j][k];
     SET_VECTOR_ELT(R_trajectories, i, R_traj);
   }
 
