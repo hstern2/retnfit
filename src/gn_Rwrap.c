@@ -27,11 +27,11 @@ SEXP max_experiments_Rwrap() {
   return Rf_ScalarInteger(MAX_EXPERIMENTS);
 }
 
-static int SEXP_to_int(SEXP x) { return INTEGER_VALUE(x); }
-static int *SEXP_to_intp(SEXP x) { return INTEGER_POINTER(x); }
-static double SEXP_to_double(SEXP x) { return NUMERIC_VALUE(x); }
-static double *SEXP_to_doublep(SEXP x) { return NUMERIC_POINTER(x); }
-static char *SEXP_to_charp(SEXP x) { return STRING_VALUE(x); }
+static int SEXP_to_int(SEXP x) { return Rf_asInteger(x); }
+static int *SEXP_to_intp(SEXP x) { return INTEGER(x); }
+static double SEXP_to_double(SEXP x) { return Rf_asReal(x); }
+static double *SEXP_to_doublep(SEXP x) { return REAL(x); }
+static char *SEXP_to_charp(SEXP x) { return CHAR(Rf_asChar(x)); }
 
 SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_n_node,
