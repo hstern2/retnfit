@@ -31,7 +31,7 @@ static int SEXP_to_int(SEXP x) { return Rf_asInteger(x); }
 static int *SEXP_to_intp(SEXP x) { return INTEGER(x); }
 static double SEXP_to_double(SEXP x) { return Rf_asReal(x); }
 static double *SEXP_to_doublep(SEXP x) { return REAL(x); }
-static char *SEXP_to_charp(SEXP x) { return CHAR(Rf_asChar(x)); }
+static const char *SEXP_to_const_charp(SEXP x) { return CHAR(Rf_asChar(x)); }
 
 SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_n_node,
@@ -65,7 +65,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   const double T_lo = SEXP_to_double(R_T_lo);
   const double T_hi = SEXP_to_double(R_T_hi);
   const double target_score = SEXP_to_double(R_target_score);
-  const char *outfile = SEXP_to_charp(R_outfile);
+  const char *outfile = SEXP_to_const_charp(R_outfile);
 
   struct experiment_set e;
   experiment_set_init(&e, n, i_exp, i_node, outcome, val, is_perturbation);
