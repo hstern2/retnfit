@@ -1,6 +1,10 @@
 callNetworkMonteCarloRwrap <- function(i, n,
     n_node,
-    experiment_set,
+    i_exp,
+    i_node,
+    outcome,
+    value,
+    is_perturbation,
     max_parents,
     n_cycles,
     n_write,
@@ -13,14 +17,15 @@ callNetworkMonteCarloRwrap <- function(i, n,
 
     set.seed(seed + i)
 
+
     results <- .Call("network_monte_carlo_Rwrap",
         n,
         n_node,
-        experiment_set$i_exp,
-        experiment_set$i_node,
-        experiment_set$outcome,
-        experiment_set$val,
-        experiment_set$is_perturbation,
+        i_exp,
+        i_node,
+        outcome,
+        value,
+        is_perturbation,
         max_parents,
         n_cycles,
         n_write,
@@ -52,18 +57,32 @@ parallelFit <- function(experiment_set,
     logfile,
     seed)
 {
+    i_exp <- experiment_set$i_exp
+    i_node <- experiment_set$i_node
+    outcome <- experiment_set$outcome
+    value <- experiment_set$value
+    is_perturbation <- experiment_set$is_perturbation
+    if (is.logical(is_perturbation)) {
+        is_perturbation <- as.integer(is_perturbation)
+    }
+
+    stopifnot(is.integer(i_exp))
+    stopifnot(is.integer(i_node))
+    stopifnot(is.integer(outcome))
+    stopifnot(is.numeric(value))
+    stopifnot(is.integer(is_perturbation))
     stopifnot(T_lo > 0)
     stopifnot(T_hi > T_lo)
     stopifnot(max_parents >= 1)
 
     n <- nrow(experiment_set)
-    n_node <- max(experiment_set$i_node)+1
+    n_node <- max(i_node)+1
 
     max_nodes = .Call("max_nodes_Rwrap")
     stopifnot(n_node <= max_nodes)
 
     max_experiments = .Call("max_experiments_Rwrap")
-    number_of_experiments = max(experiment_set$i_exp)+1
+    number_of_experiments = max(i_exp)+1
     stopifnot(number_of_experiments <= max_experiments)
 
     if (.Call("is_MPI_available") &&
@@ -87,7 +106,11 @@ parallelFit <- function(experiment_set,
         BPPARAM=bp_param,
         n,
         n_node,
-        experiment_set,
+        i_exp,
+        i_node,
+        outcome,
+        value,
+        is_perturbation,
         max_parents, 
         n_cycles, 
         n_write, 

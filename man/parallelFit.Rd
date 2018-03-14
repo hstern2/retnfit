@@ -30,42 +30,74 @@
     \item{seed}{seed for random number generator}
 }
 \value{
-    return value is a list with an element for each replica.  Each
+    The return value is a list with an element for each replica.  Each
     element is itself a list of the best unnormalized score, normalized
     score (unnormalized score divided by product of number of nodes and
     number of experiments), list of parents for each node, and array
-    describing transition rule, giving the outcome of a node for each
-    configuration of parent node.
+    describing the transition rule, giving the outcome of a node for each
+    possible configuration of parent nodes.
 }
 \author{Harry A. Stern and Matthew N. McCall}
 \examples{
 
-i_exp <- as.integer(c(0,0,0,0,0,0,0,0,0,1,1,1,
-                        1,1,1,1,1,1,1,1,1,1,1,
-                        1,1,1,1))
-i_node <- as.integer(c(0,0,0,1,1,1,2,2,2,0,0,0,
-                        1,1,1,2,2,2,0,0,0,1,1,1,
-                        2,2,2))
-outcome <- as.integer(c(-1,0,1,-1,0,1,-1,0,1,-1,0,1,
-                        -1,0,1,-1,0,1,-1,0,1,-1,0,1,
-                        -1,0,1))
-value <- c(2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0,
-            2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0,
-            2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0)
-is_perturbation <- as.integer(c(0,0,1,0,0,0,0,0,0,0,0,
-                                0,0,0,1,0,0,0,0,0,0,0,
-                                0,0,0,0,1))
+i_exp <- as.integer(c(0,0,0, 0,0,0, 0,0,0, 0,0,0,
+                        1,1,1, 1,1,1, 1,1,1, 1,1,1,
+                        2,2,2, 2,2,2, 2,2,2, 2,2,2,
+                        3,3,3, 3,3,3, 3,3,3, 3,3,3,
+                        4,4,4, 4,4,4, 4,4,4, 4,4,4,
+                        5,5,5, 5,5,5, 5,5,5, 5,5,5,
+                        6,6,6, 6,6,6, 6,6,6, 6,6,6,
+                        7,7,7, 7,7,7, 7,7,7, 7,7,7))
+
+i_node <- as.integer(c(0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3))
+
+outcome <- as.integer(c(-1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1))
+
+value <- c(0,1,2, 0,1,2, 0,1,2, 0,1,2,
+            2,1,0, 0,1,2, 0,1,2, 0,1,2,
+            2,1,0, 2,1,0, 0,1,2, 0,1,2,
+            2,1,0, 2,1,0, 2,1,0, 0,1,2,
+            2,1,0, 2,1,0, 2,1,0, 2,1,0,
+            0,1,2, 2,1,0, 2,1,0, 2,1,0,
+            0,1,2, 0,1,2, 2,1,0, 2,1,0,
+            0,1,2, 0,1,2, 0,1,2, 2,1,0)
+
+is_perturbation <- 
+c(TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE,
+    TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE)
+
 indata <- data.frame(i_exp,i_node,outcome,value,is_perturbation)
+
 results <- parallelFit(indata,
                         max_parents=1,
-                        n_cycles=10000,
+                        n_cycles=100000,
                         n_write=10,
                         T_lo=0.001,
-                        T_hi=1.0,
+                        T_hi=2.0,
                         target_score=0,
                         n_proc=3,
-                        logfile='test.log',
-                        seed=12345)
+                        logfile='try.log',
+                        seed=1234)
 
 lowest_temp_results <- results[[1]]
 

@@ -23,18 +23,33 @@ implemented in the \ttt{ternarynet} package.
 
 The \ttt{retnfit} package contains a single function,
 \ttt{parallelFit}, for fitting a ternary network model to target
-data consisting of the steady-state responses given a set of
-perturbations, again as described in reference 1.  
+data consisting of the steady-state responses for each node
+(a ternary value, -1/0/+1) 
+given a set of perturbations, again as described in reference 1.  
 The function takes the following arguments:
 \begin{description}
     \item[\ttt{experiment\_set}]data frame containing five columns: 
-        \ttt{i\_exp} (experiment index), 
-        \ttt{i\_node} (node index), 
-        \ttt{outcome} (-1/0/1), 
-        \ttt{value} (cost for that outcome), 
-        \ttt{is\_perturbation} (0 or 1)
+        \begin{description}
+            \item[\ttt{i\_exp}] an experiment index:
+                an integer from 0 to $N_{\textrm{exp}}-1$,
+                where $N_{\textrm{exp}}$ is the number of experiments.
+            \item[\ttt{i\_node}] a node index: an integer from
+                0 to $N_{\textrm{node}}-1$,
+                where $N_{\textrm{node}}$ is the number of nodes.
+            \item[\ttt{outcome}] a value of -1, 0, or +1, denoting a
+                particular outcome for
+                that node in that experiment
+            \item[\ttt{value}] a cost for obtaining that outcome.
+                For instance, if the cost function
+                is the Hamming distance, and the observed outcome is +1,
+                the cost would be would be +2, +1, or 0 for an 
+                outcome of -1, 0, or +1, respectively.
+            \item[\ttt{is\_perturbation}] a Boolean value 
+                (or a value of 0/1) denoting whether this 
+                outcome is due to an applied perturbation or not.
+        \end{description}
     \item[\ttt{max\_parents}]maximum number of parents 
-                            allowed for each node
+                                allowed for each node
     \item[\ttt{n\_cycles}]maximum number of Monte Carlo cycles
     \item[\ttt{n\_write}]number of times to write output during the run
     \item[\ttt{T\_lo}]T for lowest-temperature replica
@@ -49,40 +64,81 @@ The return value is a list with an element for each replica.  Each
 element is itself a list of the best unnormalized score, normalized
 score (unnormalized score divided by product of number of nodes and
 number of experiments), list of parents for each node, and array
-describing transition rule, giving the outcome of a node for each
-configuration of parent node. 
+describing the transition rule, giving the outcome of a node for each
+possible configuration of parent nodes.
 
 \section*{Example}
 
-<<echo=T>>=
-library('retnfit')
+The following shows a subset of the simple model regulatory network
+given in Example 1 of Reference 1 (nodes 1-4 only).  There are four
+nodes and eight experiments (the first four rows of Table 4).  
+The cost function for each possible outcome is the Hamming distance 
+with the observed steady-state outcome, given a persistent perturbation.
+The output corresponds with the parents and transitions described on page 13
+of Reference 1.
 
-i_exp <- as.integer(c(0,0,0,0,0,0,0,0,0,1,1,1,
-                        1,1,1,1,1,1,1,1,1,1,1,
-                        1,1,1,1))
-i_node <- as.integer(c(0,0,0,1,1,1,2,2,2,0,0,0,
-                        1,1,1,2,2,2,0,0,0,1,1,1,
-                        2,2,2))
-outcome <- as.integer(c(-1,0,1,-1,0,1,-1,0,1,-1,0,1,
-                        -1,0,1,-1,0,1,-1,0,1,-1,0,1,
-                        -1,0,1))
-value <- c(2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0,
-            2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0,
-            2.0,1.0,0.0,2.0,1.0,0.0,2.0,1.0,0.0)
-is_perturbation <- as.integer(c(0,0,1,0,0,0,0,0,0,0,0,
-                                0,0,0,1,0,0,0,0,0,0,0,
-                                0,0,0,0,1))
+<<echo=T>>=
+
+library(retnfit)
+
+i_exp <- as.integer(c(0,0,0, 0,0,0, 0,0,0, 0,0,0,
+                        1,1,1, 1,1,1, 1,1,1, 1,1,1,
+                        2,2,2, 2,2,2, 2,2,2, 2,2,2,
+                        3,3,3, 3,3,3, 3,3,3, 3,3,3,
+                        4,4,4, 4,4,4, 4,4,4, 4,4,4,
+                        5,5,5, 5,5,5, 5,5,5, 5,5,5,
+                        6,6,6, 6,6,6, 6,6,6, 6,6,6,
+                        7,7,7, 7,7,7, 7,7,7, 7,7,7))
+
+i_node <- as.integer(c(0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                        0,0,0, 1,1,1, 2,2,2, 3,3,3))
+
+outcome <- as.integer(c(-1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                        -1,0,1, -1,0,1, -1,0,1, -1,0,1))
+
+value <- c(0,1,2, 0,1,2, 0,1,2, 0,1,2,
+            2,1,0, 0,1,2, 0,1,2, 0,1,2,
+            2,1,0, 2,1,0, 0,1,2, 0,1,2,
+            2,1,0, 2,1,0, 2,1,0, 0,1,2,
+            2,1,0, 2,1,0, 2,1,0, 2,1,0,
+            0,1,2, 2,1,0, 2,1,0, 2,1,0,
+            0,1,2, 0,1,2, 2,1,0, 2,1,0,
+            0,1,2, 0,1,2, 0,1,2, 2,1,0)
+
+is_perturbation <- 
+c(TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE,
+    TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+    FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE)
+
 indata <- data.frame(i_exp,i_node,outcome,value,is_perturbation)
+
 results <- parallelFit(indata,
                         max_parents=1,
-                        n_cycles=10000,
+                        n_cycles=100000,
                         n_write=10,
                         T_lo=0.001,
-                        T_hi=1.0,
+                        T_hi=2.0,
                         target_score=0,
                         n_proc=3,
-                        logfile='test.log',
-                        seed=12345)
+                        logfile='try.log',
+                        seed=1234)
 
 lowest_temp_results <- results[[1]]
 
@@ -100,7 +156,6 @@ print(lowest_temp_results$outcomes)
 
 @
 
-
 \section*{References}
 
 \begin{enumerate}
@@ -108,9 +163,6 @@ print(lowest_temp_results$outcomes)
 ``Fitting Boolean networks from steady state perturbation data," 
 \textit{Statistical Applications in Genetics and Molecular Biology} 
 \textbf{10} (2011)
-\item Harry~A.~Stern and Matthew~N.~McCall,
-``Fitting ternary network models of gene regulatory networks 
-by replica exchange Monte Carlo,'' manuscript in preparation
 \end{enumerate}
 
 \end{document}

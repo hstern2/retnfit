@@ -558,30 +558,37 @@ double network_monte_carlo(network_t n,
 #endif
     copy_network(&t0, n);
     unsigned long j;
-    const int is_parent_move = i % 2;
+    const int is_parent_move = (i % 2) && n->n_parent < n->n_node - 1;
     if (is_parent_move) { /* change a parent */
       parent_tries++;
       for (j = 0; j < parent_moves; j++) {
 	const int k = random_int_inclusive(0, n_node - 1); /* which node to change */
 	int pnew;
-      try_again:
+      try_another_parent:
 	pnew = random_int_inclusive(0, n_node - 1); /* new parent */
 	if (pnew == k)
-	  goto try_again;
+	  goto try_another_parent;
 	int ip;
 	for (ip = 0; ip < n->n_parent; ip++)
 	  if (pnew == n->parent[k][ip])
-	    goto try_again;
+	    goto try_another_parent;
 	n->parent[k][random_int_inclusive(0, n->n_parent - 1)] = pnew;
 	qsort(&n->parent[k][0], n->n_parent, sizeof(int), intcmp);
       }
     } else { /* change outcomes */
       outcome_tries++;
+      const int i_all_parents_unperturbed = (n->n_outcome - 1)/2;
       for (j = 0; j < outcome_moves; j++) {
 	const int k = random_int_inclusive(0, n_node - 1);
 	/* change outcomes */
-	if (n->n_parent > 0)
-	  n->outcome[k][random_int_inclusive(0, n->n_outcome - 1)] = random_int_inclusive(-1,1);
+	if (n->n_parent > 0) {
+	  int i_outcome;
+	try_another_outcome:
+	  i_outcome = random_int_inclusive(0, n->n_outcome - 1);
+	  if (i_outcome == i_all_parents_unperturbed)
+	    goto try_another_outcome;
+	  n->outcome[k][i_outcome] = random_int_inclusive(-1,1);
+	}
       }
     }
     const double limit = s - T*log(uniform_random_from_0_to_1_exclusive());
