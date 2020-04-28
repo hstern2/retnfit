@@ -68,7 +68,8 @@ extern "C" {
 			     double T_lo,
 			     double T_hi,
 			     FILE *out,
-			     double target_score);
+			     double target_score,
+                             unsigned long n_intermediates);
 
   unsigned three_to_the(unsigned n);
 

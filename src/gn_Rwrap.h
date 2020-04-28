@@ -23,7 +23,8 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_T_lo,
 			       SEXP R_T_hi,
 			       SEXP R_target_score,
-			       SEXP R_outfile);
+			       SEXP R_outfile,
+                               SEXP R_n_intermediates);
 
 
 #endif /* GN_RWRAP_H */

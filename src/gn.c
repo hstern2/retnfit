@@ -517,7 +517,8 @@ double network_monte_carlo(network_t n,
 			   double T_lo,
 			   double T_hi,
 			   FILE *out,
-			   double target_score)
+			   double target_score,
+                           unsigned long n_intermediates)
 {
   const int n_node = n->n_node;
   double T = T_hi;

@@ -46,7 +46,8 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_T_lo,
 			       SEXP R_T_hi,
 			       SEXP R_target_score,
-			       SEXP R_outfile)
+			       SEXP R_outfile,
+                               SEXP R_n_intermediates)
 {
 
   const int n = SEXP_to_int(R_n);
@@ -61,11 +62,12 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 
   const int *is_perturbation = SEXP_to_intp(R_is_perturbation);
   const unsigned long n_cycles = SEXP_to_double(R_n_cycles);
-  const int n_write = SEXP_to_int(R_n_write);
+  const unsigned long n_write = SEXP_to_int(R_n_write);
   const double T_lo = SEXP_to_double(R_T_lo);
   const double T_hi = SEXP_to_double(R_T_hi);
   const double target_score = SEXP_to_double(R_target_score);
   const char *outfile = SEXP_to_const_charp(R_outfile);
+  const unsigned long n_intermediates = SEXP_to_int(R_n_intermediates);
 
   struct experiment_set e;
   experiment_set_init(&e, n, i_exp, i_node, outcome, val, is_perturbation);
@@ -98,7 +100,9 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 					    n_write,
 					    T_lo,
 					    T_hi,
-					    f, target_score);
+					    f,
+                                            target_score,
+                                            n_intermediates);
   
   SEXP R_normalized_score = PROTECT(NEW_NUMERIC(1));
   double *normalized_score = SEXP_to_doublep(R_normalized_score);

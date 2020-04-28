@@ -12,7 +12,8 @@
         target_score,
         n_proc,
         logfile,
-        seed)
+        seed,
+        n_intermediates)
 }
 \arguments{
     \item{experiment_set}{data frame containing five columns: 
@@ -28,6 +29,7 @@
     \item{n_proc}{number of replicas}
     \item{logfile}{filename for log file}
     \item{seed}{seed for random number generator}
+    \item{n_intermediates}{number of intermediate networks to return}
 }
 \value{
     The return value is a list with an element for each replica.  Each
@@ -97,7 +99,8 @@ results <- parallelFit(indata,
                         target_score=0,
                         n_proc=3,
                         logfile='try.log',
-                        seed=1234)
+                        seed=1234,
+                        n_intermediates=5)
 
 lowest_temp_results <- results[[1]]
 

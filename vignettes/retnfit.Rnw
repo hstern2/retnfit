@@ -58,6 +58,7 @@ The function takes the following arguments:
     \item[\ttt{n\_proc}]number of replicas
     \item[\ttt{logfile}]filename for log file
     \item[\ttt{seed}]seed for random number generator
+    \item[\ttt{n\_intermediates}]number of intermediate networks returned
 \end{description}
 
 The return value is a list with an element for each replica.  Each
@@ -138,7 +139,8 @@ results <- parallelFit(indata,
                         target_score=0,
                         n_proc=3,
                         logfile='try.log',
-                        seed=1234)
+                        seed=1234,
+                        n_intermediates=5)
 
 lowest_temp_results <- results[[1]]
 

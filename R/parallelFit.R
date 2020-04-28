@@ -12,7 +12,8 @@ callNetworkMonteCarloRwrap <- function(i, n,
     T_hi,
     target_score,
     logfile,
-    seed)
+    seed,
+    n_intermediates)
 {
 
     set.seed(seed + i)
@@ -32,7 +33,8 @@ callNetworkMonteCarloRwrap <- function(i, n,
         T_lo,
         T_hi,
         target_score,
-        logfile)
+        logfile,
+        n_intermediates)
 
     names(results) <- c("unnormalized_score",
         "normalized_score",
@@ -55,7 +57,8 @@ parallelFit <- function(experiment_set,
     target_score,
     n_proc,
     logfile,
-    seed)
+    seed,
+    n_intermediates)
 {
     i_exp <- experiment_set$i_exp
     i_node <- experiment_set$i_node
@@ -74,6 +77,7 @@ parallelFit <- function(experiment_set,
     stopifnot(T_lo > 0)
     stopifnot(T_hi > T_lo)
     stopifnot(max_parents >= 1)
+    stopifnot(n_intermediates >= 1)
 
     n <- nrow(experiment_set)
     n_node <- max(i_node)+1
@@ -118,7 +122,8 @@ parallelFit <- function(experiment_set,
         T_hi,
         target_score, 
         logfile,
-        seed)
+        seed,
+        n_intermediates)
 
     if (using_MPI) {
         Rmpi::mpi.finalize()
