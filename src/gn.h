@@ -19,7 +19,13 @@ extern "C" {
   } *network_t;
  
   void network_init(network_t, int n_node, int max_parents);
-  void network_write(FILE *, const network_t);
+  void network_randomize_parents(network_t);
+  void network_randomize_outcomes(network_t);
+  void network_set_outcomes_to_null(network_t);
+  void network_write_to_file(FILE *, const network_t);
+  void network_write_to_intp(const network_t, int *parent, int *outcome);
+  void network_read_parents_from_intp(network_t, const int *parents);
+  void network_read_outcomes_from_intp(network_t, const int *outcomes);
   void network_delete(network_t);
 
   typedef struct experiment
@@ -68,8 +74,7 @@ extern "C" {
 			     double T_lo,
 			     double T_hi,
 			     FILE *out,
-			     double target_score,
-                             unsigned long n_intermediates);
+			     double target_score);
 
   unsigned three_to_the(unsigned n);
 

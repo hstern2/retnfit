@@ -62,3 +62,31 @@ int string_begins_with(const char *buf, const char *start)
 {
   return !strncmp(buf, start, strlen(start));
 }
+
+int intcmp(const void *a, const void *b)
+{
+  if (*(const int *) a < *(const int *) b)
+    return -1;
+  if (*(const int *) a > *(const int *) b)
+    return 1;
+  return 0;
+}
+
+void read_line(FILE *f, char *buf, int n)
+{
+  if (!fgets(buf, n, f))
+    die("read_line: unexpected end of file");
+  if (strlen(buf) >= n)
+    die("read_line: line too long");
+}
+
+double uniform_random_from_0_to_1_exclusive()
+{
+  /* return (double) random() / ((double) RAND_MAX + 1.0); */
+  return unif_rand();
+}
+
+int random_int_inclusive(int a, int b)
+{
+  return (int) floor((b-a+1)*uniform_random_from_0_to_1_exclusive()) + a;
+}

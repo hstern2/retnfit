@@ -7,7 +7,7 @@ const static R_CallMethodDef R_CallDef[] = {
   CALLDEF(is_MPI_available, 0),
   CALLDEF(max_nodes_Rwrap, 0),
   CALLDEF(max_experiments_Rwrap, 0),
-  CALLDEF(network_monte_carlo_Rwrap, 15),
+  CALLDEF(network_monte_carlo_Rwrap, 16),
   {0, 0, 0}
 };
 

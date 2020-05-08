@@ -53,23 +53,27 @@ static char sym_from_state(int s)
   return 0;
 }
 
-static void read_line(FILE *f, char *buf, int n)
+static int random_outcome()
 {
-  if (!fgets(buf, n, f))
-    die("read_line: unexpected end of file");
-  if (strlen(buf) >= n)
-    die("read_line: line too long");
+  return random_int_inclusive(-1,1);
 }
 
-static double uniform_random_from_0_to_1_exclusive()
+static int random_parent(int i, int n_node, int n_parent, const int *p)
 {
-  /* return (double) random() / ((double) RAND_MAX + 1.0); */
-  return unif_rand();
-}
-
-static int random_int_inclusive(int a, int b)
-{
-  return (int) floor((b-a+1)*uniform_random_from_0_to_1_exclusive()) + a;
+  int k;
+  for (k = 0; k < 10000000; k++) {
+    const int pnew = random_int_inclusive(0, n_node-1);
+    if (pnew != i) {
+      int j;
+      for (j = 0; j < n_parent; j++)
+        if (pnew == p[j])
+          break;
+      if (j == n_parent)
+        return pnew;
+    }
+  }
+  die("random_parent: whoops");
+  return 0;
 }
 
 #define MAX_LINE (1024 + MAX_NODES)
@@ -91,15 +95,67 @@ void network_init(network_t n, int n_node, int max_parents)
   n->n_outcome = three_to_the(max_parents);
   n->parent = int_array2D_new(n->n_node, n->n_parent);
   n->outcome = int_array2D_new(n->n_node, n->n_outcome);
+}
+
+void network_randomize_parents(network_t n)
+{
   int i;
-  for (i = 0; i < n_node; i++) {
+  for (i = 0; i < n->n_node; i++) {
     int j;
     for (j = 0; j < n->n_parent; j++)
-      n->parent[i][j] = (i+j+1)%n_node;
+      n->parent[i][j] = random_parent(i, n->n_node, j, n->parent[i]);
+    qsort(&n->parent[i][0], n->n_parent, sizeof(int), intcmp);
+  }
+}
+
+void network_set_outcomes_to_null(network_t n)
+{
+  int i;
+  for (i = 0; i < n->n_node; i++) {
+    int j;
     for (j = 0; j < n->n_outcome; j++)
       n->outcome[i][j] = state_from_sym('.');
   }
-}  
+}
+
+void network_randomize_outcomes(network_t n)
+{
+  int i;
+  for (i = 0; i < n->n_node; i++) {
+    int j;
+    for (j = 0; j < n->n_outcome; j++)
+      n->outcome[i][j] = random_outcome();
+  }
+}
+
+void network_write_to_intp(const network_t n, int *parent, int *outcome)
+{
+  int i, j;
+  for (i = 0; i < n->n_node; i++)
+    for (j = 0; j < n->n_parent; j++)
+      parent[j*n->n_node+i] = n->parent[i][j];
+  for (i = 0; i < n->n_node; i++) {
+    int k;
+    for (k = 0; k < n->n_outcome; k++)
+      outcome[k*n->n_node+i] = n->outcome[i][k];
+  }  
+}
+
+void network_read_parents_from_intp(network_t n, const int *parents)
+{
+  int i, j;
+  for (i = 0; i < n->n_node; i++)
+    for (j = 0; j < n->n_parent; j++)
+      n->parent[i][j] = parents[j*n->n_node+i];
+}
+
+void network_read_outcomes_from_intp(network_t n, const int *outcomes)
+{
+  int i, j;
+  for (i = 0; i < n->n_node; i++)
+    for (j = 0; j < n->n_outcome; j++)
+      n->outcome[i][j] = outcomes[j*n->n_node+i];
+}
 
 void network_delete(network_t n)
 {
@@ -107,16 +163,7 @@ void network_delete(network_t n)
   int_array2D_delete(n->outcome);
 }
 
-static int intcmp(const void *a, const void *b)
-{
-  if (*(const int *) a < *(const int *) b)
-    return -1;
-  if (*(const int *) a > *(const int *) b)
-    return 1;
-  return 0;
-}
-
-void network_write(FILE *f, const network_t n)
+void network_write_to_file(FILE *f, const network_t n)
 {
   int i;
   for (i = 0; i < n->n_node; i++) {
@@ -517,9 +564,15 @@ double network_monte_carlo(network_t n,
 			   double T_lo,
 			   double T_hi,
 			   FILE *out,
-			   double target_score,
-                           unsigned long n_intermediates)
+			   double target_score)
 {
+
+#ifdef TMPTMP
+  fprintf(out, "--initial network--\n");
+  network_write_to_file(out, n);
+  fprintf(out, "--end initial network--\n");
+#endif
+
   const int n_node = n->n_node;
   double T = T_hi;
 #ifdef USE_MPI
@@ -563,33 +616,25 @@ double network_monte_carlo(network_t n,
     if (is_parent_move) { /* change a parent */
       parent_tries++;
       for (j = 0; j < parent_moves; j++) {
-	const int k = random_int_inclusive(0, n_node - 1); /* which node to change */
-	int pnew;
-      try_another_parent:
-	pnew = random_int_inclusive(0, n_node - 1); /* new parent */
-	if (pnew == k)
-	  goto try_another_parent;
-	int ip;
-	for (ip = 0; ip < n->n_parent; ip++)
-	  if (pnew == n->parent[k][ip])
-	    goto try_another_parent;
-	n->parent[k][random_int_inclusive(0, n->n_parent - 1)] = pnew;
-	qsort(&n->parent[k][0], n->n_parent, sizeof(int), intcmp);
+	      const int k = random_int_inclusive(0, n_node - 1); /* which node to change */
+      	n->parent[k][random_int_inclusive(0, n->n_parent - 1)] = 
+          random_parent(i, n->n_node, n->n_parent, n->parent[k]);
+      	qsort(&n->parent[k][0], n->n_parent, sizeof(int), intcmp);
       }
     } else { /* change outcomes */
       outcome_tries++;
       const int i_all_parents_unperturbed = (n->n_outcome - 1)/2;
       for (j = 0; j < outcome_moves; j++) {
-	const int k = random_int_inclusive(0, n_node - 1);
-	/* change outcomes */
-	if (n->n_parent > 0) {
-	  int i_outcome;
-	try_another_outcome:
-	  i_outcome = random_int_inclusive(0, n->n_outcome - 1);
-	  if (i_outcome == i_all_parents_unperturbed)
-	    goto try_another_outcome;
-	  n->outcome[k][i_outcome] = random_int_inclusive(-1,1);
-	}
+	      const int k = random_int_inclusive(0, n_node - 1);
+      	/* change outcomes */
+      	if (n->n_parent > 0) {
+      	  int i_outcome;
+        try_another_outcome:
+	        i_outcome = random_int_inclusive(0, n->n_outcome - 1);
+      	  if (i_outcome == i_all_parents_unperturbed)
+	          goto try_another_outcome;
+      	  n->outcome[k][i_outcome] = random_outcome();
+      	}
       }
     }
     const double limit = s - T*log(uniform_random_from_0_to_1_exclusive());
@@ -597,13 +642,13 @@ double network_monte_carlo(network_t n,
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
       if (is_parent_move)
-	parent_acc++;
+	      parent_acc++;
       else
-	outcome_acc++;
+	      outcome_acc++;
       s = s_new;
       if (s < s_best) {
-	s_best = s;
-	copy_network(&best, n);
+	      s_best = s;
+	      copy_network(&best, n);
       }
     } else {
       /* rejected */
@@ -702,5 +747,12 @@ double network_monte_carlo(network_t n,
   copy_network(n, &best);
   network_delete(&best);
   network_delete(&t0);
+
+#ifdef TMPTMP
+  fprintf(out, "--final network--\n");
+  network_write_to_file(out, n);
+  fprintf(out, "--end final network--\n");
+#endif
+
   return s_best;
 }

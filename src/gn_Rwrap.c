@@ -47,7 +47,8 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_T_hi,
 			       SEXP R_target_score,
 			       SEXP R_outfile,
-                               SEXP R_n_intermediates)
+             SEXP R_init_parents,
+             SEXP R_init_outcomes)
 {
 
   const int n = SEXP_to_int(R_n);
@@ -67,7 +68,6 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   const double T_hi = SEXP_to_double(R_T_hi);
   const double target_score = SEXP_to_double(R_target_score);
   const char *outfile = SEXP_to_const_charp(R_outfile);
-  const unsigned long n_intermediates = SEXP_to_int(R_n_intermediates);
 
   struct experiment_set e;
   experiment_set_init(&e, n, i_exp, i_node, outcome, val, is_perturbation);
@@ -78,6 +78,14 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 
   struct network net;
   network_init(&net, e.n_node, max_parents);
+  if (!Rf_isNull(R_init_parents))
+    network_read_parents_from_intp(&net, SEXP_to_intp(R_init_parents));
+  else
+    network_randomize_parents(&net);
+  if (!Rf_isNull(R_init_outcomes))
+    network_read_outcomes_from_intp(&net, SEXP_to_intp(R_init_outcomes));
+  else
+    network_set_outcomes_to_null(&net);
 
   char fname[1024];
 
@@ -101,8 +109,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 					    T_lo,
 					    T_hi,
 					    f,
-                                            target_score,
-                                            n_intermediates);
+              target_score);
   
   SEXP R_normalized_score = PROTECT(NEW_NUMERIC(1));
   double *normalized_score = SEXP_to_doublep(R_normalized_score);
@@ -116,28 +123,16 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   fprintf(f, "normalized score: %g\n", *normalized_score);
   fprintf(f, "\n");
   fprintf(f, "network:\n");
-  network_write(f, &net);
+  network_write_to_file(f, &net);
   fclose(f);
 
   SEXP R_parents = PROTECT(NEW_INTEGER(n_node*max_parents));
-  int *parents = SEXP_to_intp(R_parents);
-
-  int i, j;
-  for (i = 0; i < n_node; i++)
-    for (j = 0; j < max_parents; j++)
-      parents[j*n_node+i] = net.parent[i][j];
-
   SEXP R_outcomes = PROTECT(NEW_INTEGER(n_node*three_to_the(max_parents)));
-  int *outcomes = SEXP_to_intp(R_outcomes);
-
-  for (i = 0; i < n_node; i++) {
-    int k;
-    for (k = 0; k < net.n_outcome; k++)
-      outcomes[k*n_node+i] = net.outcome[i][k];
-  }
+  network_write_to_intp(&net, SEXP_to_intp(R_parents), SEXP_to_intp(R_outcomes));
 
   SEXP R_trajectories = PROTECT(NEW_LIST(e.n_experiment));
   struct trajectory t;
+  int i;
   for (i = 0; i < e.n_experiment; i++) {
     network_advance_until_repetition(&net, &e.experiment[i], &t);
     const int n_rep = t.repetition_end + 1;
@@ -145,7 +140,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
     int j, k;
     for (j = 0; j < n_rep; j++)
       for (k = 0; k < n_node; k++)
-	SEXP_to_intp(R_traj)[k*n_rep+j] = t.state[j][k];
+	      SEXP_to_intp(R_traj)[k*n_rep+j] = t.state[j][k];
     SET_VECTOR_ELT(R_trajectories, i, R_traj);
   }
 
