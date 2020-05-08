@@ -158,8 +158,10 @@ print(lowest_temp_results$outcomes)
 
 @
 
-Subsequent fits may be started using the network from a previous fit as the initial conditions,
-as in the following example (the initial network in the case already has a score of 0).
+Subsequent fits may be started using the network from 
+a previous fit as the initial conditions,
+as in the following example (the initial network in the case 
+already has a score of 0).
 
 <<echo=T>>=
 results <- parallelFit(indata,
