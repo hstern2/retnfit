@@ -616,23 +616,22 @@ double network_monte_carlo(network_t n,
     if (is_parent_move) { /* change a parent */
       parent_tries++;
       for (j = 0; j < parent_moves; j++) {
-	      const int k = random_int_inclusive(0, n_node - 1); /* which node to change */
+	const int k = random_int_inclusive(0, n_node - 1); /* which node to change */
       	n->parent[k][random_int_inclusive(0, n->n_parent - 1)] = 
-          random_parent(i, n->n_node, n->n_parent, n->parent[k]);
+          random_parent(k, n->n_node, n->n_parent, n->parent[k]);
       	qsort(&n->parent[k][0], n->n_parent, sizeof(int), intcmp);
       }
     } else { /* change outcomes */
       outcome_tries++;
       const int i_all_parents_unperturbed = (n->n_outcome - 1)/2;
       for (j = 0; j < outcome_moves; j++) {
-	      const int k = random_int_inclusive(0, n_node - 1);
+	const int k = random_int_inclusive(0, n_node - 1);
       	/* change outcomes */
       	if (n->n_parent > 0) {
       	  int i_outcome;
-        try_another_outcome:
-	        i_outcome = random_int_inclusive(0, n->n_outcome - 1);
-      	  if (i_outcome == i_all_parents_unperturbed)
-	          goto try_another_outcome;
+          do
+	    i_outcome = random_int_inclusive(0, n->n_outcome - 1);
+      	  while (i_outcome == i_all_parents_unperturbed);
       	  n->outcome[k][i_outcome] = random_outcome();
       	}
       }
