@@ -109,7 +109,7 @@ smallmodel_2_score <- function() {
                             T_lo=0.001,
                             T_hi=2.0,
                             target_score=0,
-                            n_proc=3,
+                            n_proc=1,
                             logfile='try2.log',
                             seed=1234)
     

@@ -99,13 +99,12 @@ parallelFit <- function(experiment_set,
         requireNamespace("Rmpi") && 
         requireNamespace("snow")) {
 
-        stopifnot(n_proc >= 2)
         using_MPI = TRUE
         bp_param <- BiocParallel::SnowParam(n_proc, type="MPI")
 
     } else {
 
-        n_proc <- 1
+        if (n_proc > 1) stop("Rmpi not available, but n_proc > 1")
         using_MPI = FALSE   
         bp_param <- BiocParallel::SerialParam()
 

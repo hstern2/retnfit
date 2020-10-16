@@ -567,12 +567,6 @@ double network_monte_carlo(network_t n,
 			   double target_score)
 {
 
-#ifdef TMPTMP
-  fprintf(out, "--initial network--\n");
-  network_write_to_file(out, n);
-  fprintf(out, "--end initial network--\n");
-#endif
-
   const int n_node = n->n_node;
   double T = T_hi;
 #ifdef USE_MPI
@@ -581,7 +575,8 @@ double network_monte_carlo(network_t n,
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   unsigned long exchange_acc = 0, exchange_tries = 0;
-  T = T_lo * pow(T_hi/T_lo, fraction(mpi_rank, mpi_size-1));
+  if (mpi_size > 1)
+    T = T_lo * pow(T_hi/T_lo, fraction(mpi_rank, mpi_size-1));
 #endif
   if (e->n_experiment == 0)
     die("network_monte_carlo: no experiments given");
@@ -606,10 +601,11 @@ double network_monte_carlo(network_t n,
   unsigned long outcome_acc = 0, outcome_tries = 0, outcome_moves = 1;
   unsigned long i;
   for (i = 1; i <= n_cycles; i++) {
-#ifndef USE_MPI
-    /* if no MPI available, do annealing instead of replica exchange */
-    T = T_hi * pow(T_lo/T_hi, fraction(i-1, n_cycles-1));
+#ifdef USE_MPI
+    if (mpi_size == 1)
 #endif
+    /* if no MPI available or only one process, do simulated annealing */
+      T = T_hi * pow(T_lo/T_hi, fraction(i-1, n_cycles-1));
     copy_network(&t0, n);
     unsigned long j;
     const int is_parent_move = (i % 2) && n->n_parent < n->n_node - 1;
@@ -654,7 +650,7 @@ double network_monte_carlo(network_t n,
       copy_network(n, &t0);
     }
 #ifdef USE_MPI
-    const int try_exchange = i % EXCHANGE_INTERVAL == 0;
+    const int try_exchange = (mpi_size > 1) && (i % EXCHANGE_INTERVAL == 0);
     if (try_exchange) {
       if ((mpi_rank + i/EXCHANGE_INTERVAL) % 2) {
 	if (mpi_rank < mpi_size - 1) {
@@ -746,12 +742,6 @@ double network_monte_carlo(network_t n,
   copy_network(n, &best);
   network_delete(&best);
   network_delete(&t0);
-
-#ifdef TMPTMP
-  fprintf(out, "--final network--\n");
-  network_write_to_file(out, n);
-  fprintf(out, "--end final network--\n");
-#endif
 
   return s_best;
 }
