@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define MAX_NODES 100
+#define MAX_NODES 10000
 #define MAX_EXPERIMENTS 300
 #define MAX_STATES 10
 
