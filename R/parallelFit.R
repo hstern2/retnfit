@@ -131,8 +131,10 @@ parallelFit <- function(experiment_set,
         init_parents,
         init_outcomes)
 
-    if (using_MPI) 
+    if (using_MPI) {
+        Rmpi::mpi.comm.disconnect()
         Rmpi::mpi.finalize()
+    }
 
     results
 
