@@ -14,7 +14,10 @@ callNetworkMonteCarloRwrap <- function(i, n,
     logfile,
     seed,
     init_parents,
-    init_outcomes)
+    init_outcomes,
+    exchange_interval,
+    adjust_move_size_interval,
+    max_states)
 {
 
     set.seed(seed + i)
@@ -35,7 +38,10 @@ callNetworkMonteCarloRwrap <- function(i, n,
         target_score,
         logfile,
         init_parents,
-        init_outcomes)
+        init_outcomes,
+        exchange_interval,
+        adjust_move_size_interval,
+        max_states)
 
     names(results) <- c("unnormalized_score",
         "normalized_score",
@@ -60,7 +66,10 @@ parallelFit <- function(experiment_set,
     logfile,
     seed=NULL,
     init_parents=NULL,
-    init_outcomes=NULL)
+    init_outcomes=NULL,
+    exchange_interval=1000,
+    adjust_move_size_interval=7001,
+    max_states=10)
 {
     i_exp <- experiment_set$i_exp
     i_node <- experiment_set$i_node
@@ -79,6 +88,9 @@ parallelFit <- function(experiment_set,
     stopifnot(T_lo > 0)
     stopifnot(T_hi > T_lo)
     stopifnot(max_parents >= 1)
+    stopifnot(exchange_interval >= 1)
+    stopifnot(adjust_move_size_interval >= 1)
+    stopifnot(max_states >= 1)
     stopifnot(is.null(init_parents) || is.integer(init_parents));
     stopifnot(is.null(init_outcomes) || is.integer(init_outcomes));
 
@@ -93,6 +105,9 @@ parallelFit <- function(experiment_set,
     max_experiments = .Call("max_experiments_Rwrap")
     number_of_experiments = max(i_exp)+1
     stopifnot(number_of_experiments <= max_experiments)
+ 
+    max_states_limit = .Call("max_states_limit_Rwrap")
+    stopifnot(max_states <= max_states_limit)
 
     if (.Call("is_MPI_available") &&
         requireNamespace("BiocParallel") && 
@@ -129,7 +144,10 @@ parallelFit <- function(experiment_set,
         logfile,
         seed,
         init_parents,
-        init_outcomes)
+        init_outcomes,
+        exchange_interval,
+        adjust_move_size_interval,
+        max_states)
 
     if (using_MPI) {
         Rmpi::mpi.comm.disconnect()

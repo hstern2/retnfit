@@ -6,9 +6,6 @@
 
 #include "array.h"
 
-#define ADJUST_MOVE_SIZE_INTERVAL 7001
-#define EXCHANGE_INTERVAL 1000
-
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
@@ -412,27 +409,27 @@ double lowest_possible_score(const experiment_set_t eset)
   return s;
 }
 
-void network_advance_until_repetition(const network_t n, const experiment_t e, trajectory_t t)
+void network_advance_until_repetition(const network_t n, const experiment_t e, trajectory_t t, int max_states)
 {
   init_trajectory(t, e, n->n_node);
   int i;
-  for (i = 1; i < MAX_STATES && !repetition_found(t); i++) {
+  for (i = 1; i < max_states && !repetition_found(t); i++) {
     advance(n,t,i);
     check_for_repetition(t,i);
   }
 }
 
-void network_write_response_as_target_data(FILE *f, network_t n, const experiment_set_t e)
+void network_write_response_as_target_data(FILE *f, network_t n, const experiment_set_t e, int max_states)
 {
   const int n_node = n->n_node;
   if (n_node != e->n_node)
-    die("network_write_response_from_experiment_set: network has %d nodes, experiment set has %d nodes",
+    die("network_write_response_as_target_data: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   fprintf(f, "i_exp, i_node, outcome, value, is_perturbation\n");
   struct trajectory traj;
   int i_exp;
   for (i_exp = 0; i_exp < e->n_experiment; i_exp++) {
-    network_advance_until_repetition(n, &e->experiment[i_exp], &traj);
+    network_advance_until_repetition(n, &e->experiment[i_exp], &traj, max_states);
     int i_node;
     for (i_node = 0; i_node < n_node; i_node++) {
       int i_outcome;
@@ -445,7 +442,7 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
   }
 }
 
-void network_write_response_from_experiment_set(FILE *f, network_t n, const experiment_set_t e)
+void network_write_response_from_experiment_set(FILE *f, network_t n, const experiment_set_t e, int max_states)
 {
   const int n_node = n->n_node;
   if (n_node != e->n_node)
@@ -455,7 +452,7 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
   struct trajectory traj;
   for (i = 0; i < e->n_experiment; i++) {
     fprintf(f, "experiment %d:\n", i);
-    network_advance_until_repetition(n, &e->experiment[i], &traj);
+    network_advance_until_repetition(n, &e->experiment[i], &traj, max_states);
     write_repetition(f,&traj);
     fprintf(f, "\n");
   }
@@ -463,7 +460,7 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
   fprintf(f, "Most probable and predicted steady states:\n");
   for (i = 0; i < e->n_experiment; i++) {
     write_most_probable(f, &e->experiment[i], n_node);
-    network_advance_until_repetition(n, &e->experiment[i], &traj);
+    network_advance_until_repetition(n, &e->experiment[i], &traj, max_states);
     write_state(f, traj.steady_state, n_node);
     fprintf(f, "\n\n");
   }
@@ -482,13 +479,13 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
   return s;
 }
 
-static double score(network_t n, const experiment_set_t eset, trajectory_t traj, double limit)
+static double score(network_t n, const experiment_set_t eset, trajectory_t traj, double limit, int max_states)
 {
   double s = 0;
   int i_exp;
   for (i_exp = 0; i_exp < eset->n_experiment; i_exp++) {
     const experiment_t e = &eset->experiment[i_exp];
-    network_advance_until_repetition(n, e, traj);
+    network_advance_until_repetition(n, e, traj, max_states);
     if (repetition_found(traj)) {
       s += score_for_trajectory(e, traj); // * scale_factor(eset)
       if (s > limit)
@@ -564,7 +561,10 @@ double network_monte_carlo(network_t n,
 			   double T_lo,
 			   double T_hi,
 			   FILE *out,
-			   double target_score)
+			   double target_score,
+                           unsigned long exchange_interval,
+                           unsigned long adjust_move_size_interval,
+                           int max_states)
 {
 
   const int n_node = n->n_node;
@@ -585,10 +585,13 @@ double network_monte_carlo(network_t n,
   if (n_node != e->n_node)
     die("network_monte_carlo: network has %d nodes, but experiment set has %d nodes", n_node, e->n_node);
   struct trajectory traj;
-  double s = score(n,e,&traj,HUGE_VAL), s_best = s;
+  double s = score(n,e,&traj,HUGE_VAL,max_states), s_best = s;
   fprintf(out, "number of steps: %lu\n", n_cycles);
   fprintf(out, "initial temperature: %g\n", T);
   fprintf(out, "target score: %g\n", target_score);
+  fprintf(out, "exchange interval: %lu\n", exchange_interval);
+  fprintf(out, "adjust move size interval: %lu\n", adjust_move_size_interval);
+  fprintf(out, "max states: %d\n", max_states);
   fprintf(out, "initial score: %g\n", s);
   fprintf(out, "\n");
   fflush(out);
@@ -633,7 +636,7 @@ double network_monte_carlo(network_t n,
       }
     }
     const double limit = s - T*log(uniform_random_from_0_to_1_exclusive());
-    const double s_new = score(n, e, &traj, limit);
+    const double s_new = score(n, e, &traj, limit, max_states);
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
       if (is_parent_move)
@@ -650,9 +653,9 @@ double network_monte_carlo(network_t n,
       copy_network(n, &t0);
     }
 #ifdef USE_MPI
-    const int try_exchange = (mpi_size > 1) && (i % EXCHANGE_INTERVAL == 0);
+    const int try_exchange = (mpi_size > 1) && (i % exchange_interval == 0);
     if (try_exchange) {
-      if ((mpi_rank + i/EXCHANGE_INTERVAL) % 2) {
+      if ((mpi_rank + i/exchange_interval) % 2) {
 	if (mpi_rank < mpi_size - 1) {
 	  /* Try an exchange with higher-T neighbor */
 	  const int r1 = mpi_rank + 1;
@@ -720,7 +723,7 @@ double network_monte_carlo(network_t n,
     if (stop)
       break;
     /* adjust number of moves */
-    if (parent_tries == ADJUST_MOVE_SIZE_INTERVAL) { 
+    if (parent_tries == adjust_move_size_interval) { 
       const double f = fraction(parent_acc, parent_tries);
       if (f > 0.5 && parent_moves < n_node)
 	parent_moves++;
@@ -729,7 +732,7 @@ double network_monte_carlo(network_t n,
       parent_tries = 0;
       parent_acc = 0;
     }
-    if (outcome_tries == ADJUST_MOVE_SIZE_INTERVAL) {
+    if (outcome_tries == adjust_move_size_interval) {
       const double f = fraction(outcome_acc, outcome_tries);
       if (f > 0.5)
 	outcome_moves++;

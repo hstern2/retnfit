@@ -6,7 +6,11 @@ Version: 0.99.17
 Date: 2018-01-09
 Author: Harry A. Stern <hstern2@ur.rochester.edu>, 
     Matthew N. McCall <mccallm@gmail.com>
-Maintainer: Harry A. Stern <hstern2@ur.rochester.edu>
+Authors@R: c(
+    person("Stern", "Harry",
+           email="hstern2@ur.rochester.edu",
+           role=c("aut","cre")),
+    person("McCall", "Matthew", role="aut"))
 Description: This package provides an implementation of the 
     replica exchange Monte Carlo algorithm for fitting 
     ternary network models of gene regulatory networks.

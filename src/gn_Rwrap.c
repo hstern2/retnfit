@@ -27,6 +27,10 @@ SEXP max_experiments_Rwrap() {
   return Rf_ScalarInteger(MAX_EXPERIMENTS);
 }
 
+SEXP max_states_limit_Rwrap() {
+  return Rf_ScalarInteger(MAX_STATES_LIMIT);
+}
+
 static int SEXP_to_int(SEXP x) { return Rf_asInteger(x); }
 static int *SEXP_to_intp(SEXP x) { return INTEGER(x); }
 static double SEXP_to_double(SEXP x) { return Rf_asReal(x); }
@@ -47,8 +51,11 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_T_hi,
 			       SEXP R_target_score,
 			       SEXP R_outfile,
-             SEXP R_init_parents,
-             SEXP R_init_outcomes)
+                               SEXP R_init_parents,
+                               SEXP R_init_outcomes,
+                               SEXP R_exchange_interval,
+                               SEXP R_adjust_move_size_interval,
+                               SEXP R_max_states)
 {
 
   const int n = SEXP_to_int(R_n);
@@ -63,10 +70,13 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 
   const int *is_perturbation = SEXP_to_intp(R_is_perturbation);
   const unsigned long n_cycles = SEXP_to_double(R_n_cycles);
-  const unsigned long n_write = SEXP_to_int(R_n_write);
+  const int n_write = SEXP_to_int(R_n_write);
   const double T_lo = SEXP_to_double(R_T_lo);
   const double T_hi = SEXP_to_double(R_T_hi);
   const double target_score = SEXP_to_double(R_target_score);
+  const int exchange_interval = SEXP_to_int(R_exchange_interval);
+  const int adjust_move_size_interval = SEXP_to_int(R_adjust_move_size_interval);
+  const int max_states = SEXP_to_int(R_max_states);
   const char *outfile = SEXP_to_const_charp(R_outfile);
 
   struct experiment_set e;
@@ -109,13 +119,16 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 					    T_lo,
 					    T_hi,
 					    f,
-              target_score);
+              target_score,
+              exchange_interval,
+              adjust_move_size_interval,
+              max_states);
   
   SEXP R_normalized_score = PROTECT(NEW_NUMERIC(1));
   double *normalized_score = SEXP_to_doublep(R_normalized_score);
   *normalized_score = *unnormalized_score * scale_factor(&e);
   
-  network_write_response_from_experiment_set(f, &net, &e);
+  network_write_response_from_experiment_set(f, &net, &e, max_states);
   fprintf(f, "\n");
   fprintf(f, "unnormalized score: %g\n", *unnormalized_score);
   fprintf(f, "lowest possible unnormalized score: %g\n", lowest_possible_score(&e));
@@ -134,7 +147,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   struct trajectory t;
   int i;
   for (i = 0; i < e.n_experiment; i++) {
-    network_advance_until_repetition(&net, &e.experiment[i], &t);
+    network_advance_until_repetition(&net, &e.experiment[i], &t, max_states);
     const int n_rep = t.repetition_end + 1;
     SEXP R_traj = PROTECT(allocMatrix(INTSXP, n_rep, n_node));
     int j, k;

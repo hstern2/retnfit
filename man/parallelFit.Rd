@@ -14,7 +14,10 @@
         logfile,
         seed,
         init_parents,
-        init_outcomes)
+        init_outcomes,
+        exchange_interval,
+        adjust_move_size_interval,
+        max_states)
 }
 \arguments{
     \item{experiment_set}{data frame containing five columns: 
@@ -32,6 +35,11 @@
     \item{seed}{seed for random number generator}
     \item{init_parents}{initial parents; randomized if null}
     \item{init_outcomes}{initial outcomes; set to '.' if null}
+    \item{exchange_interval}{steps between exchanges; default=1000}
+    \item{adjust_move_size_interval}{steps between move size adjustment;
+          default=7001}
+    \item{max_states}{max states to propagate when testing for repetition;
+          default=10}
 }
 \value{
     The return value is a list with an element for each replica.  Each

@@ -60,6 +60,11 @@ The function takes the following arguments:
     \item[\ttt{seed}]seed for random number generator
     \item[\ttt{init\_parents}]initial parents; randomize if null
     \item[\ttt{init\_outcomes}]inital outcomes; set to '.' if null
+    \item[\ttt{exchange\_interval}]steps between replica exchanges; default=1000
+    \item[\ttt{adjust\_move\_size\_interval}]steps between 
+          move size adjustments, default=7001
+    \item[\ttt{max\_states}]maximum number of states to propagate
+          to find a repetition; default=10
 \end{description}
 
 The return value is a list with an element for each replica.  Each
