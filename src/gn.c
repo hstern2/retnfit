@@ -10,6 +10,8 @@
 #include <mpi.h>
 #endif
 
+#include <omp.h>
+
 #include "util.h"
 #include "gn.h"
 
@@ -269,6 +271,16 @@ static double score_for_most_probable_state(const experiment_t e, int j)
   return score_for_state(e,j,most_probable_state(e,j));
 }
 
+static trajectory_t trajectories_new(int n)
+{
+  return (trajectory_t) safe_malloc(n*sizeof(struct trajectory));
+}
+
+static void trajectories_delete(trajectory_t t)
+{
+  free(t);
+}
+
 static void init_trajectory(trajectory_t t, const experiment_t e, int n_node)
 {
   t->n_node = n_node;
@@ -426,20 +438,22 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
     die("network_write_response_as_target_data: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   fprintf(f, "i_exp, i_node, outcome, value, is_perturbation\n");
-  struct trajectory traj;
+  trajectory_t trajectories = trajectories_new(e->n_experiment);
   int i_exp;
   for (i_exp = 0; i_exp < e->n_experiment; i_exp++) {
-    network_advance_until_repetition(n, &e->experiment[i_exp], &traj, max_states);
+    trajectory_t traj = &trajectories[i_exp];
+    network_advance_until_repetition(n, &e->experiment[i_exp], traj, max_states);
     int i_node;
     for (i_node = 0; i_node < n_node; i_node++) {
       int i_outcome;
       for (i_outcome = -1; i_outcome <= 1; i_outcome++)
 	fprintf(f, "%d, %d, %d, %.1f, %d\n",
 		i_exp, i_node, i_outcome,
-		fabs((double) traj.steady_state[i_node] - (double) i_outcome),
-		traj.is_persistent[i_node] && traj.steady_state[i_node] == i_outcome);
+		fabs((double) traj->steady_state[i_node] - (double) i_outcome),
+		traj->is_persistent[i_node] && traj->steady_state[i_node] == i_outcome);
     }
   }
+  trajectories_delete(trajectories);
 }
 
 void network_write_response_from_experiment_set(FILE *f, network_t n, const experiment_set_t e, int max_states)
@@ -449,21 +463,24 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
     die("network_write_response_from_experiment_set: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   int i;
-  struct trajectory traj;
+  trajectory_t trajectories = trajectories_new(e->n_experiment);
   for (i = 0; i < e->n_experiment; i++) {
+    trajectory_t traj = &trajectories[i];
     fprintf(f, "experiment %d:\n", i);
-    network_advance_until_repetition(n, &e->experiment[i], &traj, max_states);
-    write_repetition(f,&traj);
+    network_advance_until_repetition(n, &e->experiment[i], traj, max_states);
+    write_repetition(f,traj);
     fprintf(f, "\n");
   }
   fprintf(f, "Lowest possible score: %g\n", lowest_possible_score(e));
   fprintf(f, "Most probable and predicted steady states:\n");
   for (i = 0; i < e->n_experiment; i++) {
+    trajectory_t traj = &trajectories[i];
     write_most_probable(f, &e->experiment[i], n_node);
-    network_advance_until_repetition(n, &e->experiment[i], &traj, max_states);
-    write_state(f, traj.steady_state, n_node);
+    network_advance_until_repetition(n, &e->experiment[i], traj, max_states);
+    write_state(f, traj->steady_state, n_node);
     fprintf(f, "\n\n");
   }
+  trajectories_delete(trajectories);
 }
 
 static double score_for_trajectory(const experiment_t e, const trajectory_t t)
@@ -479,22 +496,22 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
   return s;
 }
 
-static double score(network_t n, const experiment_set_t eset, trajectory_t traj, double limit, int max_states)
+static double score(network_t n, const experiment_set_t eset, trajectory_t trajectories, 
+                    double limit, int max_states)
 {
-  double s = 0;
+  double s_tot = 0;
   int i_exp;
-  for (i_exp = 0; i_exp < eset->n_experiment; i_exp++) {
-    const experiment_t e = &eset->experiment[i_exp];
-    network_advance_until_repetition(n, e, traj, max_states);
-    if (repetition_found(traj)) {
-      s += score_for_trajectory(e, traj); // * scale_factor(eset)
-      if (s > limit)
-	break;
-    } else {
-      return LARGE_SCORE;
+#pragma omp parallel for
+  for (i_exp = 0; i_exp < eset->n_experiment; i_exp++)
+    if (s_tot <= limit) {
+      const experiment_t e = &eset->experiment[i_exp];
+      trajectory_t traj = &trajectories[i_exp];
+      network_advance_until_repetition(n, e, traj, max_states);
+      const double s = repetition_found(traj) ? score_for_trajectory(e, traj) : limit;
+#pragma omp atomic
+      s_tot += s;
     }
-  }
-  return s;
+  return s_tot;
 }
 
 static void copy_network(network_t to, const network_t from)
@@ -584,15 +601,24 @@ double network_monte_carlo(network_t n,
     die("network_monte_carlo: must have at least 2 nodes");
   if (n_node != e->n_node)
     die("network_monte_carlo: network has %d nodes, but experiment set has %d nodes", n_node, e->n_node);
-  struct trajectory traj;
-  double s = score(n,e,&traj,HUGE_VAL,max_states), s_best = s;
-  fprintf(out, "number of steps: %lu\n", n_cycles);
-  fprintf(out, "initial temperature: %g\n", T);
-  fprintf(out, "target score: %g\n", target_score);
-  fprintf(out, "exchange interval: %lu\n", exchange_interval);
-  fprintf(out, "adjust move size interval: %lu\n", adjust_move_size_interval);
-  fprintf(out, "max states: %d\n", max_states);
-  fprintf(out, "initial score: %g\n", s);
+  trajectory_t trajectories = trajectories_new(e->n_experiment);
+  double s = score(n,e,trajectories,HUGE_VAL,max_states), s_best = s;
+#ifdef USE_MPI
+  fprintf(out, "Process %d of %d\n", mpi_rank, mpi_size);
+#endif
+
+  int nthreads;
+#pragma omp parallel
+  nthreads = omp_get_num_threads();
+
+  fprintf(out, "Number of threads per process: %d\n", nthreads);
+  fprintf(out, "Number of steps: %lu\n", n_cycles);
+  fprintf(out, "Initial temperature: %g\n", T);
+  fprintf(out, "Target score: %g\n", target_score);
+  fprintf(out, "Exchange interval: %lu\n", exchange_interval);
+  fprintf(out, "Adjust move size interval: %lu\n", adjust_move_size_interval);
+  fprintf(out, "Max states: %d\n", max_states);
+  fprintf(out, "Initial score: %g\n", s);
   fprintf(out, "\n");
   fflush(out);
   struct network best;
@@ -636,7 +662,7 @@ double network_monte_carlo(network_t n,
       }
     }
     const double limit = s - T*log(uniform_random_from_0_to_1_exclusive());
-    const double s_new = score(n, e, &traj, limit, max_states);
+    const double s_new = score(n, e, trajectories, limit, max_states);
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
       if (is_parent_move)
@@ -745,6 +771,7 @@ double network_monte_carlo(network_t n,
   copy_network(n, &best);
   network_delete(&best);
   network_delete(&t0);
+  trajectories_delete(trajectories);
 
   return s_best;
 }

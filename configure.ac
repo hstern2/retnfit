@@ -267,8 +267,8 @@ if test "$MPITYPE" = "OPENMPI" -o "$MPITYPE" = "LAM" -o "$MPITYPE" = "MPICH2" -o
 fi
 
 PKG_LIBS=""
-PKG_CFLAGS=""
-MSG="No OpenMPI major version 1 detected - creating Makevars for serial version"
+PKG_CFLAGS="-fopenmp"
+MSG="No OpenMPI major version 1 detected - creating Makevars for non-MPI version"
 
 if test "$MPITYPE" = "OPENMPI"; then
   OMPI_MAJOR_VERSION=`grep 'define OMPI_MAJOR_VERSION' ${MPI_INCLUDE_PATH}/mpi.h | awk '{print $3}'`
