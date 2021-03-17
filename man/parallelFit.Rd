@@ -12,7 +12,7 @@
         target_score,
         n_proc,
         logfile,
-        seed,
+        n_thread,
         init_parents,
         init_outcomes,
         exchange_interval,
@@ -32,14 +32,14 @@
                         if this is reached}
     \item{n_proc}{number of replicas}
     \item{logfile}{filename for log file}
-    \item{seed}{seed for random number generator}
+    \item{n_thread}{number of openMP threads to run per process; default=1}
     \item{init_parents}{initial parents; randomized if null}
     \item{init_outcomes}{initial outcomes; set to '.' if null}
     \item{exchange_interval}{steps between exchanges; default=1000}
     \item{adjust_move_size_interval}{steps between move size adjustment;
-          default=7001}
+            default=7001}
     \item{max_states}{max states to propagate when testing for repetition;
-          default=10}
+            default=10}
 }
 \value{
     The return value is a list with an element for each replica.  Each
@@ -108,8 +108,7 @@ results <- parallelFit(indata,
                         T_hi=2.0,
                         target_score=0,
                         n_proc=1,
-                        logfile='try.log',
-                        seed=1234)
+                        logfile='try.log')
 
 lowest_temp_results <- results[[1]]
 

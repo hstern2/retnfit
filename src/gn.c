@@ -10,7 +10,9 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "util.h"
 #include "gn.h"
@@ -578,6 +580,7 @@ double network_monte_carlo(network_t n,
 			   double T_lo,
 			   double T_hi,
 			   FILE *out,
+                           int n_thread,
 			   double target_score,
                            unsigned long exchange_interval,
                            unsigned long adjust_move_size_interval,
@@ -607,11 +610,13 @@ double network_monte_carlo(network_t n,
   fprintf(out, "Process %d of %d\n", mpi_rank, mpi_size);
 #endif
 
-  int nthreads;
+#ifdef _OPENMP
+  omp_set_num_threads(n_thread);
 #pragma omp parallel
-  nthreads = omp_get_num_threads();
+  n_thread = omp_get_num_threads();
+#endif
 
-  fprintf(out, "Number of threads per process: %d\n", nthreads);
+  fprintf(out, "Number of threads per process: %d\n", n_thread);
   fprintf(out, "Number of steps: %lu\n", n_cycles);
   fprintf(out, "Initial temperature: %g\n", T);
   fprintf(out, "Target score: %g\n", target_score);

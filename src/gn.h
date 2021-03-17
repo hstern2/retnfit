@@ -74,6 +74,7 @@ extern "C" {
 			     double T_lo,
 			     double T_hi,
 			     FILE *out,
+                             int n_thread,
 			     double target_score,
                              unsigned long exchange_interval,
                              unsigned long adjust_move_size_interval,

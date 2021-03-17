@@ -57,14 +57,14 @@ The function takes the following arguments:
     \item[\ttt{target\_score}] run will terminate if this is reached
     \item[\ttt{n\_proc}]number of replicas
     \item[\ttt{logfile}]filename for log file
-    \item[\ttt{seed}]seed for random number generator
+    \item[\ttt{n\_thread}]number of openMP threads to run per process; default=1
     \item[\ttt{init\_parents}]initial parents; randomize if null
     \item[\ttt{init\_outcomes}]inital outcomes; set to '.' if null
     \item[\ttt{exchange\_interval}]steps between replica exchanges; default=1000
     \item[\ttt{adjust\_move\_size\_interval}]steps between 
-          move size adjustments, default=7001
+            move size adjustments, default=7001
     \item[\ttt{max\_states}]maximum number of states to propagate
-          to find a repetition; default=10
+            to find a repetition; default=10
 \end{description}
 
 The return value is a list with an element for each replica.  Each
@@ -144,8 +144,7 @@ results <- parallelFit(indata,
                         T_hi=2.0,
                         target_score=0,
                         n_proc=1,
-                        logfile='try.log',
-                        seed=1234)
+                        logfile='try.log')
 
 lowest_temp_results <- results[[1]]
 
@@ -178,7 +177,6 @@ results <- parallelFit(indata,
                         target_score=0,
                         n_proc=1,
                         logfile='try.log',
-                        seed=1234,
                         init_parents=lowest_temp_results$parents,
                         init_outcomes=lowest_temp_results$outcomes)
 

@@ -51,6 +51,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 			       SEXP R_T_hi,
 			       SEXP R_target_score,
 			       SEXP R_outfile,
+                               SEXP R_n_thread,
                                SEXP R_init_parents,
                                SEXP R_init_outcomes,
                                SEXP R_exchange_interval,
@@ -78,6 +79,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   const int adjust_move_size_interval = SEXP_to_int(R_adjust_move_size_interval);
   const int max_states = SEXP_to_int(R_max_states);
   const char *outfile = SEXP_to_const_charp(R_outfile);
+  const int n_thread = SEXP_to_int(R_n_thread);
 
   struct experiment_set e;
   experiment_set_init(&e, n, i_exp, i_node, outcome, val, is_perturbation);
@@ -119,6 +121,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
 					    T_lo,
 					    T_hi,
 					    f,
+              n_thread,
               target_score,
               exchange_interval,
               adjust_move_size_interval,

@@ -60,8 +60,7 @@ smallmodel_score <- function() {
                             T_hi=1.0,
                             target_score=0,
                             n_proc=1,
-                            logfile='try.log',
-                            seed=1234)
+                            logfile='try.log')
     
     lowest_temp_results <- results[[1]]
 

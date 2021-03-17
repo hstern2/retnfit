@@ -182,10 +182,7 @@ if test -n "$MPI_ROOT"; then
     else
          echo "Cannot find mpi.h header file"
          echo "Please use --with-mpi=/path/to/mpi or specify the environment variable MPI_ROOT"
-         exit 1
     fi
-else
-    AC_CHECK_HEADER(mpi.h,, AC_MSG_ERROR(["Cannot find mpi.h header file"]))
 fi
 
 echo "Trying to find libmpi.so or libmpich.a ..."
@@ -225,8 +222,7 @@ elif test -f ${MPI_ROOT}/lib64/libmpich.a; then
                 [#include <mpi.h>])
 else
     AC_CHECK_LIB(mpi, main, MPI_LIBPATH="${MPI_ROOT}/lib",
-            [   echo "libmpi not found. exiting..."
-                exit 1  ]
+            [   echo "libmpi not found." ]
 )
 fi
 
@@ -266,16 +262,16 @@ if test "$MPITYPE" = "OPENMPI" -o "$MPITYPE" = "LAM" -o "$MPITYPE" = "MPICH2" -o
   MPI_DEFS="-DMPI2"
 fi
 
-PKG_LIBS=""
 PKG_CFLAGS="-fopenmp"
+PKG_LIBS="-fopenmp"
 MSG="No OpenMPI major version 1 detected - creating Makevars for non-MPI version"
 
 if test "$MPITYPE" = "OPENMPI"; then
   OMPI_MAJOR_VERSION=`grep 'define OMPI_MAJOR_VERSION' ${MPI_INCLUDE_PATH}/mpi.h | awk '{print $3}'`
   echo "OMPI_MAJOR_VERSION: $OMPI_MAJOR_VERSION"
   if test "$OMPI_MAJOR_VERSION" = "1"; then
-    PKG_CFLAGS="-DUSE_MPI -I${MPI_INCLUDE_PATH} ${MPI_INCL2} ${MPI_DEFS} -D${MPITYPE}"
-    PKG_LIBS="-L${MPI_LIBPATH} -lmpi ${MPI_LIBS}"
+    PKG_CFLAGS="${PKG_CFLAGS} -DUSE_MPI -I${MPI_INCLUDE_PATH} ${MPI_INCL2} ${MPI_DEFS} -D${MPITYPE}"
+    PKG_LIBS="${PKG_LIBS} -L${MPI_LIBPATH} -lmpi ${MPI_LIBS}"
     MSG="OpenMPI major version 1 detected - creating Makevars for MPI version"
   fi
 fi
