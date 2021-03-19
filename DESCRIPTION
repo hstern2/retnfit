@@ -22,7 +22,9 @@ Description: This package provides an implementation of the
     ternarynet package; this is a parallel implementation that
     can run on multiple processors using Rmpi.
 License: GPL-3
-Suggests: BiocParallel, Rmpi, snow, testthat
+Imports: BiocParallel
+Suggests: testthat
+Enhances: Rmpi, snow
 NeedsCompilation: yes
 biocViews: Software, CellBiology, GraphAndNetwork, GeneTarget, Network
 Packaged: 2018-01-09 17:40:43 UTC; hstern2
