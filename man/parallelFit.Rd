@@ -17,7 +17,8 @@
         init_outcomes,
         exchange_interval,
         adjust_move_size_interval,
-        max_states)
+        max_states,
+        callback)
 }
 \arguments{
     \item{experiment_set}{data frame containing five columns: 
@@ -40,6 +41,9 @@
             default=7001}
     \item{max_states}{max states to propagate when testing for repetition;
             default=10}
+    \item{callback}{callback function, should take one integer argument
+            (the replica number), used to call set.seed with different
+            seed for each replica}
 }
 \value{
     The return value is a list with an element for each replica.  Each

@@ -65,6 +65,9 @@ The function takes the following arguments:
             move size adjustments, default=7001
     \item[\ttt{max\_states}]maximum number of states to propagate
             to find a repetition; default=10
+    \item[\ttt{callback}]callback function, should take one integer argument
+            (the replica number), used to call set.seed with different seed
+            for each replica
 \end{description}
 
 The return value is a list with an element for each replica.  Each

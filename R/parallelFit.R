@@ -4,8 +4,11 @@ callNetworkMonteCarloRwrap <- function(i, n,
     n_write, T_lo, T_hi, target_score,
     logfile, n_thread, init_parents, init_outcomes,
     exchange_interval, adjust_move_size_interval,
-    max_states)
+    max_states, callback)
 {
+
+    if (is.function(callback)) 
+        callback(i)
 
     results <- .Call("network_monte_carlo_Rwrap",
         n, n_node, i_exp, i_node, outcome, value,
@@ -32,7 +35,7 @@ parallelFitCheckArgs <- function(i_exp, i_node, outcome, value,
     adjust_move_size_interval, init_parents,
     init_outcomes, n_thread, n_node, max_nodes,
     number_of_experiments, max_experiments,
-    max_states, max_states_limit)
+    max_states, max_states_limit, callback)
 {
     stopifnot(is.integer(i_exp))
     stopifnot(is.integer(i_node))
@@ -40,7 +43,7 @@ parallelFitCheckArgs <- function(i_exp, i_node, outcome, value,
     stopifnot(is.numeric(value))
     stopifnot(is.integer(is_perturbation))
     stopifnot(T_lo > 0)
-    stopifnot(T_hi > T_lo)
+    stopifnot(T_hi >= T_lo)
     stopifnot(max_parents >= 1)
     stopifnot(exchange_interval >= 1)
     stopifnot(adjust_move_size_interval >= 1)
@@ -51,13 +54,14 @@ parallelFitCheckArgs <- function(i_exp, i_node, outcome, value,
     stopifnot(n_node <= max_nodes)
     stopifnot(number_of_experiments <= max_experiments)
     stopifnot(max_states <= max_states_limit)
+    stopifnot(is.null(callback) || is.function(callback));
 }
 
 parallelFit <- function(experiment_set,
     max_parents, n_cycles, n_write, T_lo, T_hi, target_score,
     n_proc, logfile, n_thread=1, init_parents=NULL, init_outcomes=NULL,
     exchange_interval=1000, adjust_move_size_interval=7001,
-    max_states=10)
+    max_states=10, callback=NULL)
 {
     i_exp <- experiment_set$i_exp
     i_node <- experiment_set$i_node
@@ -77,7 +81,7 @@ parallelFit <- function(experiment_set,
         adjust_move_size_interval, init_parents,
         init_outcomes, n_thread, n_node, max_nodes,
         number_of_experiments, max_experiments,
-        max_states, max_states_limit)
+        max_states, max_states_limit, callback)
     if (.Call("is_MPI_available") &&
         requireNamespace("BiocParallel") && 
         requireNamespace("Rmpi") && 
@@ -95,7 +99,7 @@ parallelFit <- function(experiment_set,
         is_perturbation, max_parents, n_cycles, n_write,
         T_lo, T_hi, target_score, logfile, n_thread,
         init_parents, init_outcomes, exchange_interval,
-        adjust_move_size_interval, max_states)
+        adjust_move_size_interval, max_states, callback)
     if (using_MPI) {
         Rmpi::mpi.comm.disconnect()
         Rmpi::mpi.finalize()
