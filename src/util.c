@@ -17,8 +17,10 @@ void die(const char *fmt, ...)
   va_list argp;
   va_start(argp, fmt);
   char *ret;
-  if (vasprintf(&ret, fmt, argp) == -1)
+  if (vasprintf(&ret, fmt, argp) == -1) {
     error("vasprintf failed\n");
+    return;
+  }
   va_end(argp);
   char buf[1024];
   sprintf(buf, "%s\n", ret);
