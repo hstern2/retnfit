@@ -77,8 +77,6 @@ static int random_parent(int i, int n_node, int n_parent, const int *p)
   return 0;
 }
 
-#define MAX_LINE (1024 + MAX_NODES)
-
 unsigned three_to_the(unsigned n)
 {
   unsigned a = 1;
@@ -273,13 +271,26 @@ static double score_for_most_probable_state(const experiment_t e, int j)
   return score_for_state(e,j,most_probable_state(e,j));
 }
 
-static trajectory_t trajectories_new(int n)
+trajectory_t trajectories_new(int n, int max_states, int n_node)
 {
-  return (trajectory_t) safe_malloc(n*sizeof(struct trajectory));
+  trajectory_t t = (trajectory_t) safe_malloc(n*sizeof(struct trajectory));
+  int i;
+  for (i = 0; i < n; i++) {
+    t[i].is_persistent = (int *) safe_malloc(n_node*sizeof(int));
+    t[i].state = (int **) int_array2D_new(max_states, n_node);
+    t[i].steady_state = (int *) safe_malloc(n_node*sizeof(int));
+  }
+  return t;
 }
 
-static void trajectories_delete(trajectory_t t)
+void trajectories_delete(trajectory_t t, int n)
 {
+  int i;
+  for (i = 0; i < n; i++) {
+    free(t[i].is_persistent);
+    int_array2D_delete(t[i].state);
+    free(t[i].steady_state);
+  }
   free(t);
 }
 
@@ -299,38 +310,6 @@ static void init_trajectory(trajectory_t t, const experiment_t e, int n_node)
   }
 }
 
-void experiment_set_read_as_csv(FILE *f, experiment_set_t e)
-{
-  int i_exp;
-  e->n_experiment = 0;
-  e->n_node = 0;
-  for (i_exp = 0; i_exp < MAX_EXPERIMENTS; i_exp++)
-    e->experiment[i_exp].n_perturbed = 0;
-  char buf[MAX_LINE];
-  read_line(f, buf, MAX_LINE); /* skip field description line */
-  while (!end_of_file(f)) {
-    read_line(f, buf, MAX_LINE);
-    int i_node, is_perturbed, outcome;
-    double val;
-    if (sscanf(buf, "%d, %d, %d, %lf, %d", &i_exp, &i_node, &outcome, &val, &is_perturbed) != 5)
-      die("experiment_read: expecting i_exp i_node outcome value is_perturbed, found %s", buf);
-    if (outcome < -1 || outcome > 1)
-      die("experiment_read: outcome %d is out of range", outcome);
-    if (i_exp < 0 || i_exp >= MAX_EXPERIMENTS)
-      die("experiment_read: i_exp=%d is out of range, MAX_EXPERIMENTS=%d", i_exp, MAX_EXPERIMENTS);
-    if (i_node < 0 || i_node >= MAX_NODES)
-      die("experiment_read: i_node=%d is out of range, MAX_NODES=%d", i_exp, MAX_NODES);
-    experiment_t en = &e->experiment[i_exp];
-    set_score_for_state(en, i_node, outcome, val);
-    if (is_perturbed)
-      en->perturbed[en->n_perturbed++] = i_node;
-    if (i_exp >= e->n_experiment)
-      e->n_experiment = i_exp + 1;
-    if (i_node >= e->n_node)
-      e->n_node = i_node + 1;
-  }
-}
-
 void experiment_set_init(experiment_set_t e, 
 			 int n,
 			 const int *i_exp, 
@@ -339,22 +318,38 @@ void experiment_set_init(experiment_set_t e,
 			 const double *val,
 			 const int *is_perturbation)
 {
+  int i;
   e->n_experiment = 0;
   e->n_node = 0;
-  int j_exp;
-  for (j_exp = 0; j_exp < MAX_EXPERIMENTS; j_exp++)
-    e->experiment[j_exp].n_perturbed = 0;
-  int i;
   for (i = 0; i < n; i++) {
-    experiment_t en = &e->experiment[i_exp[i]];
-    set_score_for_state(en, i_node[i], outcome[i], val[i]);
-    if (is_perturbation[i])
-      en->perturbed[en->n_perturbed++] = i_node[i];
     if (i_exp[i] >= e->n_experiment)
       e->n_experiment = i_exp[i] + 1;
     if (i_node[i] >= e->n_node)
       e->n_node = i_node[i] + 1;
   }
+  e->experiment = (experiment_t) safe_malloc(e->n_experiment * sizeof(struct experiment));
+  for (i = 0; i < e->n_experiment; i++) {
+    e->experiment[i].n_perturbed = 0;
+    e->experiment[i].score = (double3 *) safe_malloc(e->n_node * sizeof(double3));
+    e->experiment[i].perturbed = (int *) safe_malloc(e->n_node * sizeof(int));
+  }
+  for (i = 0; i < n; i++) {
+    experiment_t en = &e->experiment[i_exp[i]];
+    set_score_for_state(en, i_node[i], outcome[i], val[i]);
+    if (is_perturbation[i])
+      en->perturbed[en->n_perturbed++] = i_node[i];
+  }
+}
+
+void experiment_set_delete(experiment_set_t e)
+{
+  int i;
+  for (i = 0; i < e->n_experiment; i++) {
+    free(e->experiment[i].score);
+    free(e->experiment[i].perturbed);
+  }
+  free(e->experiment);
+  e->experiment = 0;
 }
 
 static int is_node_perturbed(experiment_t e, int i_node)
@@ -440,7 +435,7 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
     die("network_write_response_as_target_data: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   fprintf(f, "i_exp, i_node, outcome, value, is_perturbation\n");
-  trajectory_t trajectories = trajectories_new(e->n_experiment);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   int i_exp;
   for (i_exp = 0; i_exp < e->n_experiment; i_exp++) {
     trajectory_t traj = &trajectories[i_exp];
@@ -455,7 +450,7 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
 		traj->is_persistent[i_node] && traj->steady_state[i_node] == i_outcome);
     }
   }
-  trajectories_delete(trajectories);
+  trajectories_delete(trajectories, e->n_experiment);
 }
 
 void network_write_response_from_experiment_set(FILE *f, network_t n, const experiment_set_t e, int max_states)
@@ -465,7 +460,7 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
     die("network_write_response_from_experiment_set: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   int i;
-  trajectory_t trajectories = trajectories_new(e->n_experiment);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   for (i = 0; i < e->n_experiment; i++) {
     trajectory_t traj = &trajectories[i];
     fprintf(f, "experiment %d:\n", i);
@@ -482,7 +477,7 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
     write_state(f, traj->steady_state, n_node);
     fprintf(f, "\n\n");
   }
-  trajectories_delete(trajectories);
+  trajectories_delete(trajectories, e->n_experiment);
 }
 
 static double score_for_trajectory(const experiment_t e, const trajectory_t t)
@@ -604,7 +599,7 @@ double network_monte_carlo(network_t n,
     die("network_monte_carlo: must have at least 2 nodes");
   if (n_node != e->n_node)
     die("network_monte_carlo: network has %d nodes, but experiment set has %d nodes", n_node, e->n_node);
-  trajectory_t trajectories = trajectories_new(e->n_experiment);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   double s = score(n,e,trajectories,HUGE_VAL,max_states), s_best = s;
 #ifdef USE_MPI
   fprintf(out, "Process %d of %d\n", mpi_rank, mpi_size);
@@ -776,7 +771,7 @@ double network_monte_carlo(network_t n,
   copy_network(n, &best);
   network_delete(&best);
   network_delete(&t0);
-  trajectories_delete(trajectories);
+  trajectories_delete(trajectories, e->n_experiment);
 
   return s_best;
 }
