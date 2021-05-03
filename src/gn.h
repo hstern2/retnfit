@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+#define MAX_NODES 200
+#define MAX_EXPERIMENTS 200
+#define MAX_STATES_LIMIT 50
+
   typedef struct network 
   {
     int n_node, n_parent, n_outcome;
@@ -24,32 +28,31 @@ extern "C" {
   void network_read_outcomes_from_intp(network_t, const int *outcomes);
   void network_delete(network_t);
 
-  typedef double double3[3];
- 
   typedef struct experiment
   {
-    double3 *score;
-    int n_perturbed, *perturbed;
+    double score[MAX_NODES][3];
+    int n_perturbed, perturbed[MAX_NODES];
   } *experiment_t;
   
   typedef struct experiment_set
   {
     int n_experiment, n_node;
-    experiment_t experiment;
+    struct experiment experiment[MAX_EXPERIMENTS];
   } *experiment_set_t;
 
   typedef struct trajectory
   {
     int n_node;
     int repetition_start, repetition_end;
-    int *is_persistent, **state, *steady_state;
+    int is_persistent[MAX_NODES];
+    int state[MAX_STATES_LIMIT][MAX_NODES];
+    int steady_state[MAX_NODES];
   } *trajectory_t;
-
-  trajectory_t trajectories_new(int n, int max_states, int n_node);
-  void trajectories_delete(trajectory_t t, int n);
 
   double scale_factor(const experiment_set_t eset);
   
+  void experiment_set_read_from_csv(FILE *, experiment_set_t);
+  void experiment_set_write_as_csv(FILE *, const experiment_set_t);
   void experiment_set_init(experiment_set_t,
 			   int n,
 			   const int *i_exp, 
@@ -57,7 +60,6 @@ extern "C" {
 			   const int *outcome,
 			   const double *val,
 			   const int *is_perturbation);
-  void experiment_set_delete(experiment_set_t);
 
   void network_write_response_from_experiment_set(FILE *, network_t, const experiment_set_t, int max_states);
   void network_write_response_as_target_data(FILE *, network_t, const experiment_set_t, int max_states);
