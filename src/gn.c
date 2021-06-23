@@ -299,38 +299,6 @@ static void init_trajectory(trajectory_t t, const experiment_t e, int n_node)
   }
 }
 
-void experiment_set_read_as_csv(FILE *f, experiment_set_t e)
-{
-  int i_exp;
-  e->n_experiment = 0;
-  e->n_node = 0;
-  for (i_exp = 0; i_exp < MAX_EXPERIMENTS; i_exp++)
-    e->experiment[i_exp].n_perturbed = 0;
-  char buf[MAX_LINE];
-  read_line(f, buf, MAX_LINE); /* skip field description line */
-  while (!end_of_file(f)) {
-    read_line(f, buf, MAX_LINE);
-    int i_node, is_perturbed, outcome;
-    double val;
-    if (sscanf(buf, "%d, %d, %d, %lf, %d", &i_exp, &i_node, &outcome, &val, &is_perturbed) != 5)
-      die("experiment_read: expecting i_exp i_node outcome value is_perturbed, found %s", buf);
-    if (outcome < -1 || outcome > 1)
-      die("experiment_read: outcome %d is out of range", outcome);
-    if (i_exp < 0 || i_exp >= MAX_EXPERIMENTS)
-      die("experiment_read: i_exp=%d is out of range, MAX_EXPERIMENTS=%d", i_exp, MAX_EXPERIMENTS);
-    if (i_node < 0 || i_node >= MAX_NODES)
-      die("experiment_read: i_node=%d is out of range, MAX_NODES=%d", i_exp, MAX_NODES);
-    experiment_t en = &e->experiment[i_exp];
-    set_score_for_state(en, i_node, outcome, val);
-    if (is_perturbed)
-      en->perturbed[en->n_perturbed++] = i_node;
-    if (i_exp >= e->n_experiment)
-      e->n_experiment = i_exp + 1;
-    if (i_node >= e->n_node)
-      e->n_node = i_node + 1;
-  }
-}
-
 void experiment_set_init(experiment_set_t e, 
 			 int n,
 			 const int *i_exp, 
@@ -341,20 +309,27 @@ void experiment_set_init(experiment_set_t e,
 {
   e->n_experiment = 0;
   e->n_node = 0;
-  int j_exp;
-  for (j_exp = 0; j_exp < MAX_EXPERIMENTS; j_exp++)
-    e->experiment[j_exp].n_perturbed = 0;
-  int i;
+  int i, j_exp;
   for (i = 0; i < n; i++) {
-    experiment_t en = &e->experiment[i_exp[i]];
-    set_score_for_state(en, i_node[i], outcome[i], val[i]);
-    if (is_perturbation[i])
-      en->perturbed[en->n_perturbed++] = i_node[i];
     if (i_exp[i] >= e->n_experiment)
       e->n_experiment = i_exp[i] + 1;
     if (i_node[i] >= e->n_node)
       e->n_node = i_node[i] + 1;
   }
+  e->experiment = (experiment_t) safe_malloc(e->n_experiment * sizeof(struct experiment));
+  for (j_exp = 0; j_exp < e->n_experiment; j_exp++)
+    e->experiment[j_exp].n_perturbed = 0;
+  for (i = 0; i < n; i++) {
+    experiment_t en = &e->experiment[i_exp[i]];
+    set_score_for_state(en, i_node[i], outcome[i], val[i]);
+    if (is_perturbation[i])
+      en->perturbed[en->n_perturbed++] = i_node[i];
+  }
+}
+
+void experiment_set_delete(experiment_set_t e)
+{
+  free(e->experiment);
 }
 
 static int is_node_perturbed(experiment_t e, int i_node)

@@ -8,7 +8,6 @@ extern "C" {
 #endif
 
 #define MAX_NODES 200
-#define MAX_EXPERIMENTS 200
 #define MAX_STATES_LIMIT 50
 
   typedef struct network 
@@ -37,7 +36,7 @@ extern "C" {
   typedef struct experiment_set
   {
     int n_experiment, n_node;
-    struct experiment experiment[MAX_EXPERIMENTS];
+    experiment_t experiment;
   } *experiment_set_t;
 
   typedef struct trajectory
@@ -60,6 +59,7 @@ extern "C" {
 			   const int *outcome,
 			   const double *val,
 			   const int *is_perturbation);
+  void experiment_set_delete(experiment_set_t);
 
   void network_write_response_from_experiment_set(FILE *, network_t, const experiment_set_t, int max_states);
   void network_write_response_as_target_data(FILE *, network_t, const experiment_set_t, int max_states);

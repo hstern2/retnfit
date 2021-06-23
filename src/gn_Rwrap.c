@@ -23,10 +23,6 @@ SEXP max_nodes_Rwrap() {
   return Rf_ScalarInteger(MAX_NODES); 
 }
 
-SEXP max_experiments_Rwrap() { 
-  return Rf_ScalarInteger(MAX_EXPERIMENTS);
-}
-
 SEXP max_states_limit_Rwrap() {
   return Rf_ScalarInteger(MAX_STATES_LIMIT);
 }
@@ -170,6 +166,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   UNPROTECT(e.n_experiment + 6);
 
   network_delete(&net);
+  experiment_set_delete(&e);
   
 #ifdef USE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
