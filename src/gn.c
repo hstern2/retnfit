@@ -18,7 +18,7 @@
 #include "gn.h"
 
 #define UNDEFINED 9
-#define LARGE_SCORE 1e10
+#define LARGE_SCORE 1e9
 
 static int state_from_sym(char c)
 {
