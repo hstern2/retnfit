@@ -8,7 +8,6 @@ extern "C" {
 #endif
 
 #define MAX_NODES 200
-#define MAX_STATES_LIMIT 50
 
   typedef struct network 
   {
@@ -44,9 +43,12 @@ extern "C" {
     int n_node;
     int repetition_start, repetition_end;
     int is_persistent[MAX_NODES];
-    int state[MAX_STATES_LIMIT][MAX_NODES];
+    int **state; /* max_states x MAX_NODES */
     int steady_state[MAX_NODES];
   } *trajectory_t;
+
+  trajectory_t trajectories_new(int ntraj, int max_states);
+  void trajectories_delete(trajectory_t, int ntraj);
 
   double scale_factor(const experiment_set_t eset);
   

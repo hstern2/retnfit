@@ -23,10 +23,6 @@ SEXP max_nodes_Rwrap() {
   return Rf_ScalarInteger(MAX_NODES); 
 }
 
-SEXP max_states_limit_Rwrap() {
-  return Rf_ScalarInteger(MAX_STATES_LIMIT);
-}
-
 static int SEXP_to_int(SEXP x) { return Rf_asInteger(x); }
 static int *SEXP_to_intp(SEXP x) { return INTEGER(x); }
 static double SEXP_to_double(SEXP x) { return Rf_asReal(x); }
@@ -143,19 +139,19 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   network_write_to_intp(&net, SEXP_to_intp(R_parents), SEXP_to_intp(R_outcomes));
 
   SEXP R_trajectories = PROTECT(NEW_LIST(e.n_experiment));
-  struct trajectory t;
+  trajectory_t t = trajectories_new(e.n_experiment, max_states);
   int i;
   for (i = 0; i < e.n_experiment; i++) {
-    network_advance_until_repetition(&net, &e.experiment[i], &t, max_states);
-    const int n_rep = t.repetition_end + 1;
+    network_advance_until_repetition(&net, &e.experiment[i], &t[i], max_states);
+    const int n_rep = t[i].repetition_end + 1;
     SEXP R_traj = PROTECT(allocMatrix(INTSXP, n_rep, n_node));
     int j, k;
     for (j = 0; j < n_rep; j++)
       for (k = 0; k < n_node; k++)
-	      SEXP_to_intp(R_traj)[k*n_rep+j] = t.state[j][k];
+	      SEXP_to_intp(R_traj)[k*n_rep+j] = t[i].state[j][k];
     SET_VECTOR_ELT(R_trajectories, i, R_traj);
   }
-
+  trajectories_delete(t, e.n_experiment);
   SEXP results = PROTECT(NEW_LIST(5));
   SET_VECTOR_ELT(results, 0, R_unnormalized_score);
   SET_VECTOR_ELT(results, 1, R_normalized_score);
