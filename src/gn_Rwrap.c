@@ -139,7 +139,7 @@ SEXP network_monte_carlo_Rwrap(SEXP R_n,
   network_write_to_intp(&net, SEXP_to_intp(R_parents), SEXP_to_intp(R_outcomes));
 
   SEXP R_trajectories = PROTECT(NEW_LIST(e.n_experiment));
-  trajectory_t t = trajectories_new(e.n_experiment, max_states);
+  trajectory_t t = trajectories_new(e.n_experiment, max_states, n_node);
   int i;
   for (i = 0; i < e.n_experiment; i++) {
     network_advance_until_repetition(&net, &e.experiment[i], &t[i], max_states);

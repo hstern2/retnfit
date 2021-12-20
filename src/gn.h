@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define MAX_NODES 200
+#define MAX_NODES 800
 
   typedef struct network 
   {
@@ -47,7 +47,7 @@ extern "C" {
     int steady_state[MAX_NODES];
   } *trajectory_t;
 
-  trajectory_t trajectories_new(int ntraj, int max_states);
+  trajectory_t trajectories_new(int ntraj, int max_states, int n_node);
   void trajectories_delete(trajectory_t, int ntraj);
 
   double scale_factor(const experiment_set_t eset);

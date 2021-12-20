@@ -54,7 +54,7 @@ smallmodel_score <- function() {
 
     results <- parallelFit(indata,
                             max_parents=1,
-                            n_cycles=100000,
+                            n_cycles=1000000,
                             n_write=10,
                             T_lo=0.001,
                             T_hi=1.0,

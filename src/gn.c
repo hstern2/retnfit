@@ -77,8 +77,6 @@ static int random_parent(int i, int n_node, int n_parent, const int *p)
   return 0;
 }
 
-#define MAX_LINE (1024 + MAX_NODES)
-
 unsigned three_to_the(unsigned n)
 {
   unsigned a = 1;
@@ -273,12 +271,12 @@ static double score_for_most_probable_state(const experiment_t e, int j)
   return score_for_state(e,j,most_probable_state(e,j));
 }
 
-trajectory_t trajectories_new(int ntraj, int max_states)
+trajectory_t trajectories_new(int ntraj, int max_states, int n_node)
 {
   trajectory_t t = (trajectory_t) safe_malloc(ntraj*sizeof(struct trajectory));
   int i;
   for (i = 0; i < ntraj; i++)
-    t[i].state = int_array2D_new(max_states, MAX_NODES);
+    t[i].state = int_array2D_new(max_states, n_node);
   return t;
 }
 
@@ -422,7 +420,7 @@ void network_write_response_as_target_data(FILE *f, network_t n, const experimen
     die("network_write_response_as_target_data: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   fprintf(f, "i_exp, i_node, outcome, value, is_perturbation\n");
-  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   int i_exp;
   for (i_exp = 0; i_exp < e->n_experiment; i_exp++) {
     trajectory_t traj = &trajectories[i_exp];
@@ -447,7 +445,7 @@ void network_write_response_from_experiment_set(FILE *f, network_t n, const expe
     die("network_write_response_from_experiment_set: network has %d nodes, experiment set has %d nodes",
 	n_node, e->n_node);
   int i;
-  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   for (i = 0; i < e->n_experiment; i++) {
     trajectory_t traj = &trajectories[i];
     fprintf(f, "experiment %d:\n", i);
@@ -586,7 +584,7 @@ double network_monte_carlo(network_t n,
     die("network_monte_carlo: must have at least 2 nodes");
   if (n_node != e->n_node)
     die("network_monte_carlo: network has %d nodes, but experiment set has %d nodes", n_node, e->n_node);
-  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states);
+  trajectory_t trajectories = trajectories_new(e->n_experiment, max_states, n_node);
   double s = score(n,e,trajectories,HUGE_VAL,max_states), s_best = s;
 #ifdef USE_MPI
   fprintf(out, "Process %d of %d\n", mpi_rank, mpi_size);
