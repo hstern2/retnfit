@@ -728,6 +728,7 @@ double network_monte_carlo(network_t n,
 	fprintf(out, "Fraction of exchanges with lower-T neighbor accepted: %g\n", fraction(exchange_acc, exchange_tries));
 #endif
       fprintf(out, "Best score: %g\n", s_best);
+      fprintf(out, "Best score (normalized): %g\n", s_best * scale_factor(e));
       fprintf(out, "\n");
       fflush(out);
     }
