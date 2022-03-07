@@ -1,10 +1,11 @@
 # retnfit
 
-## references:
+## Fitting ternary network models of gene regulatory networks by replica exchange Monte Carlo
+
+#### references:
 
 * H.R. McMurray, A. Ambeskovic, L.A. Newman, J. Aldersley, V. Balakrishnan, B. Smith, H. A. Stern, H. Land, and M. N. McCall, "Gene network modeling via TopNet reveals functional dependencies between diverse tumor-critical mediator genes," *Cell Reports* **37**, 110136 (2021) [doi.org/10.1016/j.celrep.2021.110136](https://doi.org/10.1016/j.celrep.2021.110136)
 
-Fitting ternary network models of gene regulatory networks by replica exchange Monte Carlo
 
 To install parallel (openMP and MPI) version, run 
 ```
