@@ -478,6 +478,21 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
   return s;
 }
 
+__global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
+  t->n_node = n_node;
+  int i;
+  for (i = 0; i < t->n_node; i++) {
+    t->is_persistent[i] = 0;
+    t->state[0][i] = 0;
+  }
+  t->repetition_start = t->repetition_end = 0;
+  for (i = 0; i < e->n_perturbed; i++) {
+    const int j = e->perturbed[i];
+    t->is_persistent[j] = 1;
+    t->state[0][j] = most_probable_state(e,j);
+  }
+}
+
 __global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
   // TODO: something 
   int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
