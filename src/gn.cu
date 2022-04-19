@@ -20,6 +20,48 @@
 #define UNDEFINED 9
 #define LARGE_SCORE 1e9
 
+network_t load_network_to_gpu(network_t n)
+{
+    network_t d_n;
+
+    cudaMallocManaged(&d_n, sizeof(network_t));
+    d_n->n_node = n->n_node;
+    d_n->n_parent = n->n_parent;
+    d_n->n_outcome = n->n_outcome;
+
+    int *parent_data;
+    int parent_size = n->n_parent;
+    cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
+    cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
+
+    for (int i=0;i<parent_size;i++) {
+        for (int j=0;j<parent_size;j++) {
+            parent_data[i*parent_size+j] = n->parent[i][j];
+        }
+    }
+
+    for (int i=0;i<parent_size;i++) {
+        d_n->parent[i] = &(parent_data[i*2]);
+    }
+
+    int *outcome_data;
+    int outcome_size = n->n_outcome;
+    cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
+    cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
+
+    for (int i=0;i<outcome_size;i++) {
+        for (int j=0;j<outcome_size;j++) {
+            outcome_data[i*outcome_size+j] = n->outcome[i][j];
+        }
+    }
+
+    for (int i=0;i<2;i++) {
+        d_n->outcome[i] = &(outcome_data[i*outcome_size]);
+    }
+
+    return d_n;
+}
+
 static int state_from_sym(char c)
 {
   switch (c) {
