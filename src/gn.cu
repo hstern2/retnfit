@@ -62,6 +62,18 @@ network_t load_network_to_gpu(network_t n)
     return d_n;
 }
 
+experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
+    experiment_set_t d_eset;
+    const size_t size = sizeof(experiment_set);
+    const size_t size_of_experiments = eset->n_experiment*sizeof(experiment)
+    cudaMallocManaged(&d_eset, size);
+    cudaMallocManaged(&d_eset->experiment, size_of_experiments);
+    d_eset->n_node = eset->n_node;
+    d_eset->n_experiment = eset->n_experiment;
+    cudaMemcpy(d_eset->experiment, eset->experiment, size_of_experiments, cudaMemcpyHostToDevice);
+    return d_eset;
+}
+
 static int state_from_sym(char c)
 {
   switch (c) {
