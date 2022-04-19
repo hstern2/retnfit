@@ -41,7 +41,7 @@ network_t load_network_to_gpu(network_t n)
     }
 
     for (int i=0;i<parent_size;i++) {
-        d_n->parent[i] = &(parent_data[i*2]);
+        d_n->parent[i] = &(parent_data[i*parent_size]);
     }
 
     int *outcome_data;
@@ -55,7 +55,7 @@ network_t load_network_to_gpu(network_t n)
         }
     }
 
-    for (int i=0;i<2;i++) {
+    for (int i=0;i<outcome_size;i++) {
         d_n->outcome[i] = &(outcome_data[i*outcome_size]);
     }
 
