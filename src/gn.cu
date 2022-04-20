@@ -127,15 +127,10 @@ __global__ void cuda_score_device(int n, network_t net, const experiment_set_t e
 
 } 
 
-static double cuda_score_host(network_t n, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states) {
+static double cuda_score_host(network_t gpu_n, const experiment_set_t gpu_eset, trajectory_t gpu_trajectories, double limit, int max_states) {
   double s_tot = 0;
   // initialize memory
   int N = eset->n_experiments;
-  // TODO: network_t, experiment_set_t, trajectory_t
-  network_t gpu_n = load_network_to_gpu(n);
-  experiment_set_t gpu_eset = load_experiment_set_to_gpu(eset);
-  trajectory_t gpu_trajectorues = load_trajectory_t_to_gpu(trajectories);
-
   double gpu_limits;
   int gpu_max_states;
   double *s_kernels, *gpu_s_kernels;
@@ -168,9 +163,6 @@ static double cuda_score_host(network_t n, const experiment_set_t eset, trajecto
     s_tot += s_kernels[i];
   }
 
-  cudaFree(gpu_n);
-  cudaFree(gpu_eset);
-  cudaFree(gpu_trajectories);
   cudaFree(gpu_limits);
   cudaFree(gpu_max_states);
   cudaFree(gpu_s_kernels);
@@ -749,6 +741,20 @@ double network_monte_carlo(network_t n,
 #ifdef USE_MPI
   fprintf(out, "Process %d of %d\n", mpi_rank, mpi_size);
 #endif
+
+// if CUDA, move the datastructures to Unified_Memory
+#ifdef USE_CUDA
+  network_t gpu_n = load_network_to_gpu(n);
+  experiment_set_t gpu_e = load_experiment_set_to_gpu(e);
+  trajectory_t gpu_trajectories = new_trajectory_gpu(e->n_experiment, max_states, n_node);
+  double s = cuda_score_host(gpu_n, gpu_e, gpu_trajectories, HUGE_VAL, max_states), s_best = s;
+
+  // free from unified memory
+  cudaFree(gpu_n);
+  cudaFree(gpu_e);
+  cudaFree(gpu_trajectories);
+#endif // END of USE_CUDA
+
 
 #ifdef _OPENMP
   omp_set_num_threads(n_thread);
