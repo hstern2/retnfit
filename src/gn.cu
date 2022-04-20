@@ -39,13 +39,13 @@ network_t load_network_to_gpu(network_t n)
     cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
     // QUESTION: Here the n->parent is a n_node x n_parent matrix 
     //           and the way you have defined it is as n_parent x n_parent
-    for (int i=0;i<parent_size;i++) {
+    for (int i=0;i<d_n->n_node;i++) {
         for (int j=0;j<parent_size;j++) {
             parent_data[i*parent_size+j] = n->parent[i][j];
         }
     }
 
-    for (int i=0;i<parent_size;i++) {
+    for (int i=0;i<d_n->n_node;i++) {
         d_n->parent[i] = &(parent_data[i*parent_size]);
     }
 
@@ -55,13 +55,13 @@ network_t load_network_to_gpu(network_t n)
     cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
     // QUESTION: Here the n->outcome is a n_node x n_outcome matrix 
     //           and the way you have defined it is as n_outcome x n_outcome
-    for (int i=0;i<outcome_size;i++) {
+    for (int i=0;i < d_n->n_node;i++) {
         for (int j=0;j<outcome_size;j++) {
             outcome_data[i*outcome_size+j] = n->outcome[i][j];
         }
     }
 
-    for (int i=0;i<outcome_size;i++) {
+    for (int i=0;i<d_n->n_node;i++) {
         d_n->outcome[i] = &(outcome_data[i*outcome_size]);
     }
 
@@ -80,21 +80,22 @@ experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
     return d_eset;
 }
 
-trajectory_t load_trajectory_t_to_gpu(trajectory_t trajectories) {
-  // TODO
-  trajectory_t d_trajectories;
-  const size_t size = sizeof(trajectory);
-  
-  cudaMallocManaged(&d_trajectories, size);
-  
-  d_trajectories->n_node = trajectories->n_node;
-  d_trajectories->repetition_start = trajectories->repetition_end;
-  d_trajectories->repetition_end = trajectories->repetition_end;
-  d_trajectories->is_persistent = trajectories->is_persistent;
-  d_trajectories->state = trajectories->state;
-  d_trajectories->steady_state = trajectories->steady_state;
-  
-  return d_trajectories;
+trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node) 
+{
+    trajectory_t d_t;
+    cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
+    for (int i=0;i<ntraj;i++) 
+    {
+        int *data;
+        trajectory_t curr = &d_t[i];
+        cudaMallocManaged(&data, max_states*n_node*sizeof(int));
+        cudaMallocManaged(&curr->state, max_states * sizeof(int *));
+        for (int j=0;j<max_states;j++) 
+        {
+            curr->state[j] = &(data[j*n_node]);
+        }
+    }
+    return d_t;
 }
 
 __global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
@@ -174,7 +175,6 @@ static double cuda_score_host(network_t n, const experiment_set_t eset, trajecto
   cudaFree(gpu_max_states);
   cudaFree(gpu_s_kernels);
   return s_tot;
-
 }
 
 #endif // END of USE_CUDA
