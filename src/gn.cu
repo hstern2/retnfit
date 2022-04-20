@@ -14,12 +14,16 @@
 #include <omp.h>
 #endif
 
+
 #include "util.h"
 #include "gn.h"
 
 #define UNDEFINED 9
 #define LARGE_SCORE 1e9
+#define USE_CUDA
 
+
+#ifdef USE_CUDA
 network_t load_network_to_gpu(network_t n)
 {
     network_t d_n;
@@ -33,7 +37,8 @@ network_t load_network_to_gpu(network_t n)
     int parent_size = n->n_parent;
     cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
     cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
-
+    // QUESTION: Here the n->parent is a n_node x n_parent matrix 
+    //           and the way you have defined it is as n_parent x n_parent
     for (int i=0;i<parent_size;i++) {
         for (int j=0;j<parent_size;j++) {
             parent_data[i*parent_size+j] = n->parent[i][j];
@@ -48,7 +53,8 @@ network_t load_network_to_gpu(network_t n)
     int outcome_size = n->n_outcome;
     cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
     cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
-
+    // QUESTION: Here the n->outcome is a n_node x n_outcome matrix 
+    //           and the way you have defined it is as n_outcome x n_outcome
     for (int i=0;i<outcome_size;i++) {
         for (int j=0;j<outcome_size;j++) {
             outcome_data[i*outcome_size+j] = n->outcome[i][j];
@@ -73,6 +79,106 @@ experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
     cudaMemcpy(d_eset->experiment, eset->experiment, size_of_experiments, cudaMemcpyHostToDevice);
     return d_eset;
 }
+
+trajectory_t load_trajectory_t_to_gpu(trajectory_t trajectories) {
+  // TODO
+  trajectory_t d_trajectories;
+  const size_t size = sizeof(trajectory);
+  
+  cudaMallocManaged(&d_trajectories, size);
+  
+  d_trajectories->n_node = trajectories->n_node;
+  d_trajectories->repetition_start = trajectories->repetition_end;
+  d_trajectories->repetition_end = trajectories->repetition_end;
+  d_trajectories->is_persistent = trajectories->is_persistent;
+  d_trajectories->state = trajectories->state;
+  d_trajectories->steady_state = trajectories->steady_state;
+  
+  return d_trajectories;
+}
+
+__global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
+  t->n_node = n_node;
+  int i;
+  for (i = 0; i < t->n_node; i++) {
+    t->is_persistent[i] = 0;
+    t->state[0][i] = 0;
+  }
+  t->repetition_start = t->repetition_end = 0;
+  for (i = 0; i < e->n_perturbed; i++) {
+    const int j = e->perturbed[i];
+    t->is_persistent[j] = 1;
+    t->state[0][j] = most_probable_state(e,j);
+  }
+}
+
+__global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
+  // TODO: something 
+  int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (globalIdx < n) {
+    const experiment_t e = &eset->experiment[globalIdx];
+    trajectory_t traj = &trajectories[globalIdx];
+    // TODO: how call function from within the kernel?
+    network_advance_until_repetition(net, e, traj, max_states);
+    const double s = repetition_found(traj) ? score_for_trajectory(e, traj) : limit;
+    s_kernels[globalIdx] = s;
+  }
+
+} 
+
+static double cuda_score_host(network_t n, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states) {
+  double s_tot = 0;
+  // initialize memory
+  int N = eset->n_experiments;
+  // TODO: network_t, experiment_set_t, trajectory_t
+  network_t gpu_n = load_network_to_gpu(n);
+  experiment_set_t gpu_eset = load_experiment_set_to_gpu(eset);
+  trajectory_t gpu_trajectorues = load_trajectory_t_to_gpu(trajectories);
+
+  double gpu_limits;
+  int gpu_max_states;
+  double *s_kernels, *gpu_s_kernels;
+  s_kernels = (double*)malloc(N*sizeof(double));
+  for (i = 0; i < N; i++) {
+    s_kernels[i] = 0.0;
+  }
+  // copy data
+  cudaMalloc(&gpu_limits, sizeof(double));
+  cudaMalloc(&gpu_max_states, sizeof(int));
+  cudaMalloc(&gpu_s_kernels, N*sizeof(double));
+
+  cudaMemcpy(gpu_max_states, max_states, sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(gpu_limits, limits, sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(gpu_s_kernels, s_kernels, N*sizeof(double), cudaMemcpyHostToDevice);
+
+  // make grid and block sizes according to input
+  int TILE = 8;
+  dim3 dimGrid();
+  dim3 dimBlock();
+  // launch kernel
+  cuda_score_device<<<dimGrid, dimBlock>>>(N, gpu_n, gpu_eset, gpu_trajectories, gpu_limit, gpu_max_states, gpu_kernels);
+  // TODO: figure how to sync (s_tot <= limit) check 
+  cudaSynchronize();
+  // synchronize and free memomry
+
+  cudaMemcpy(s_kernels, gpu_s_kernels, N*sizeof(double), cudaMemcpyDeviceToHost);
+  // calculate s_total
+  for (i = 0; i < eset->n_experiments; i++) {
+    s_tot += s_kernels[i];
+  }
+
+  cudaFree(gpu_n);
+  cudaFree(gpu_eset);
+  cudaFree(gpu_trajectories);
+  cudaFree(gpu_limits);
+  cudaFree(gpu_max_states);
+  cudaFree(gpu_s_kernels);
+  return s_tot;
+
+}
+
+#endif // END of USE_CUDA
+
 
 static int state_from_sym(char c)
 {
@@ -530,71 +636,6 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
     s += score_for_state(e, i_node, si);
   }
   return s;
-}
-
-__global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
-  t->n_node = n_node;
-  int i;
-  for (i = 0; i < t->n_node; i++) {
-    t->is_persistent[i] = 0;
-    t->state[0][i] = 0;
-  }
-  t->repetition_start = t->repetition_end = 0;
-  for (i = 0; i < e->n_perturbed; i++) {
-    const int j = e->perturbed[i];
-    t->is_persistent[j] = 1;
-    t->state[0][j] = most_probable_state(e,j);
-  }
-}
-
-__global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
-  // TODO: something 
-  int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (globalIdx < n) {
-    const experiment_t e = &eset->experiment[globalIdx];
-    trajectory_t traj = &trajectories[globalIdx];
-    // TODO: how call function from within the kernel?
-    network_advance_until_repetition(net, e, traj, max_states);
-    const double s = repetition_found(traj) ? score_for_trajectory(e, traj) : limit;
-    s_kernels[globalIdx] = s;
-  }
-
-} 
-
-static double cuda_score_host(network_t n, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states) {
-  double s_tot = 0;
-  // initialize memory
-  int N = eset->n_experiments;
-  // TODO: network_t, experiment_set_t, trajectory_t
-  double d_limits;
-  int d_max_states;
-  double *s_kernels, *d_s_kernels;
-  s_kernels = (double*)malloc(N*sizeof(double));
-  for (i = 0; i < N; i++) {
-    s_kernels[i] = 0.0;
-  }
-  // copy data
-  cudaMalloc(&d_limits, sizeof(double));
-  cudaMalloc(&d_max_states, sizeof(int));
-  cudaMalloc(&d_s_kernels, N*sizeof(double));
-
-  cudaMemcpy(d_max_states, max_states, sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_limits, limits, sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_s_kernels, s_kernels, N*sizeof(double), cudaMemcpyHostToDevice);
-
-  // launch kernel
-  // TODO: figure how to sync (s_tot <= limit) check 
-
-  // synchronize and free memomry
-
-
-  // calculate s_total
-  for (i = 0; i < eset->n_experiments; i++) {
-    s_tot += s_kernels[i];
-  }
-
-  return s_tot;
-
 }
 
 static double score(network_t n, const experiment_set_t eset, trajectory_t trajectories, 
