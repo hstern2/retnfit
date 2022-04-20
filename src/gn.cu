@@ -20,6 +20,60 @@
 #define UNDEFINED 9
 #define LARGE_SCORE 1e9
 
+network_t load_network_to_gpu(network_t n)
+{
+    network_t d_n;
+
+    cudaMallocManaged(&d_n, sizeof(network_t));
+    d_n->n_node = n->n_node;
+    d_n->n_parent = n->n_parent;
+    d_n->n_outcome = n->n_outcome;
+
+    int *parent_data;
+    int parent_size = n->n_parent;
+    cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
+    cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
+
+    for (int i=0;i<parent_size;i++) {
+        for (int j=0;j<parent_size;j++) {
+            parent_data[i*parent_size+j] = n->parent[i][j];
+        }
+    }
+
+    for (int i=0;i<parent_size;i++) {
+        d_n->parent[i] = &(parent_data[i*parent_size]);
+    }
+
+    int *outcome_data;
+    int outcome_size = n->n_outcome;
+    cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
+    cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
+
+    for (int i=0;i<outcome_size;i++) {
+        for (int j=0;j<outcome_size;j++) {
+            outcome_data[i*outcome_size+j] = n->outcome[i][j];
+        }
+    }
+
+    for (int i=0;i<outcome_size;i++) {
+        d_n->outcome[i] = &(outcome_data[i*outcome_size]);
+    }
+
+    return d_n;
+}
+
+experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
+    experiment_set_t d_eset;
+    const size_t size = sizeof(experiment_set);
+    const size_t size_of_experiments = eset->n_experiment*sizeof(experiment)
+    cudaMallocManaged(&d_eset, size);
+    cudaMallocManaged(&d_eset->experiment, size_of_experiments);
+    d_eset->n_node = eset->n_node;
+    d_eset->n_experiment = eset->n_experiment;
+    cudaMemcpy(d_eset->experiment, eset->experiment, size_of_experiments, cudaMemcpyHostToDevice);
+    return d_eset;
+}
+
 static int state_from_sym(char c)
 {
   switch (c) {
@@ -476,6 +530,21 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
     s += score_for_state(e, i_node, si);
   }
   return s;
+}
+
+__global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
+  t->n_node = n_node;
+  int i;
+  for (i = 0; i < t->n_node; i++) {
+    t->is_persistent[i] = 0;
+    t->state[0][i] = 0;
+  }
+  t->repetition_start = t->repetition_end = 0;
+  for (i = 0; i < e->n_perturbed; i++) {
+    const int j = e->perturbed[i];
+    t->is_persistent[j] = 1;
+    t->state[0][j] = most_probable_state(e,j);
+  }
 }
 
 __global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
