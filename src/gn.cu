@@ -74,6 +74,24 @@ experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
     return d_eset;
 }
 
+trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node) 
+{
+    trajectory_t d_t;
+    cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
+    for (int i=0;i<ntraj;i++) 
+    {
+        int *data;
+        trajectory_t curr = &d_t[i];
+        cudaMallocManaged(&data, max_states*n_node*sizeof(int));
+        cudaMallocManaged(&curr->state, max_states * sizeof(int *));
+        for (int j=0;j<max_states;j++) 
+        {
+            curr->state[j] = &(data[j*n_node]);
+        }
+    }
+    return d_t;
+}
+
 static int state_from_sym(char c)
 {
   switch (c) {
