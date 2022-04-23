@@ -1,0 +1,139 @@
+Number of threads per process: 1
+Number of steps: 1000000
+Initial temperature: 2
+Target score: 0
+Exchange interval: 1000
+Adjust move size interval: 7001
+Max states: 10
+Initial score: 1
+
+Ran 100000 steps.
+Temperature: 0.935255
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 1245
+Outcome move tries since last adjust: 1986
+Fraction of outcome moves accepted since last adjust: 0.626888
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 15
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 200000 steps.
+Temperature: 0.437347
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 1969
+Outcome move tries since last adjust: 3972
+Fraction of outcome moves accepted since last adjust: 0.49572
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 13
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 300000 steps.
+Temperature: 0.204514
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 3168
+Outcome move tries since last adjust: 5958
+Fraction of outcome moves accepted since last adjust: 0.531722
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 9
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 400000 steps.
+Temperature: 0.0956357
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 475
+Outcome move tries since last adjust: 943
+Fraction of outcome moves accepted since last adjust: 0.503712
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 10
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 500000 steps.
+Temperature: 0.0447215
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 1434
+Outcome move tries since last adjust: 2929
+Fraction of outcome moves accepted since last adjust: 0.489587
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 10
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 600000 steps.
+Temperature: 0.0209129
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 2360
+Outcome move tries since last adjust: 4915
+Fraction of outcome moves accepted since last adjust: 0.480163
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 10
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 700000 steps.
+Temperature: 0.00977935
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 3420
+Outcome move tries since last adjust: 6901
+Fraction of outcome moves accepted since last adjust: 0.49558
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 10
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 800000 steps.
+Temperature: 0.00457306
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 965
+Outcome move tries since last adjust: 1886
+Fraction of outcome moves accepted since last adjust: 0.511665
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 9
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 900000 steps.
+Temperature: 0.00213847
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 1997
+Outcome move tries since last adjust: 3872
+Fraction of outcome moves accepted since last adjust: 0.515754
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 9
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
+Ran 1000000 steps.
+Temperature: 0.001
+Parent move acceptances since last adjust: 0
+Parent move tries since last adjust: 0
+Fraction of parent moves accepted since last adjust: 0
+Outcome move acceptances since last adjust: 3116
+Outcome move tries since last adjust: 5858
+Fraction of outcome moves accepted since last adjust: 0.531922
+Number of parent moves per cycle: 1
+Number of outcome moves per cycle: 9
+Best score: 2.2233e-322
+Best score (normalized): 7.41098e-323
+
