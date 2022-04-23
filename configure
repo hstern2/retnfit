@@ -613,7 +613,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -636,6 +635,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_cuda
 with_Rmpi_include
 with_Rmpi_libpath
 with_Rmpi_type
@@ -687,7 +687,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -940,15 +939,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1086,7 +1076,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1239,7 +1229,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1266,6 +1255,7 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-cuda=CUDA_PATH   top level directory for cuda
   --with-Rmpi-include=INCLUDE_PATH
                           location of MPI header files
   --with-Rmpi-libpath=LIB_PATH
@@ -1844,6 +1834,88 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+## CUDA & NVCC arguments
+R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
+R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`
+R_CPIC=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda; cuda_path=$withval
+fi
+
+
+if test -n "${cuda_path}" ; then
+    cuda_path="${cuda_path}"
+    if test ! -f "${cuda_path}/include/cuda_runtime.h"; then
+        as_fn_error $? "Value of --with-cuda-include does not contain cuda_runtime.h" "$LINENO" 5
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: \"backend = CUDA\"" >&5
+$as_echo "$as_me: \"backend = CUDA\"" >&6;}
+    BACKEND="CUDA"
+
+    as_ac_File=`$as_echo "ac_cv_file_${cuda_path}/bin/nvcc" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${cuda_path}/bin/nvcc" >&5
+$as_echo_n "checking for ${cuda_path}/bin/nvcc... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "${cuda_path}/bin/nvcc"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  HAS_NVCC="yes"
+fi
+
+    if test -z "${HAS_NVCC}"; then
+        as_fn_error $? "\"No nvcc found in ${cuda_path}/bin. Check the path is correct\"" "$LINENO" 5
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"nvcc found in ${cuda_path}/bin.\"" >&5
+$as_echo "\"nvcc found in ${cuda_path}/bin.\"" >&6; }
+        NVCC="${cuda_path}/bin/nvcc"
+    fi
+    as_ac_File=`$as_echo "ac_cv_file_${cuda_path}/lib64/libcudart.so" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${cuda_path}/lib64/libcudart.so" >&5
+$as_echo_n "checking for ${cuda_path}/lib64/libcudart.so... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "${cuda_path}/lib64/libcudart.so"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  BIT64="yes"
+fi
+
+    if test -z "${BIT64}"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"Using ${cuda_path}/lib for cuda libs\"" >&5
+$as_echo "\"Using ${cuda_path}/lib for cuda libs\"" >&6; }
+        cu_libdir="${cuda_path}/lib"
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"Using ${cuda_path}/lib64 for CUDA libs\"" >&5
+$as_echo "\"Using ${cuda_path}/lib64 for CUDA libs\"" >&6; }
+        cu_libdir="${cuda_path}/lib64"
+    fi
+    PKG_LIBS = "${PKG_LIBS} -L${cu_libdir} -Wl,-rpath,${cu_libdir} -lcudart"
+    LDFLAGS = "$LDFLAGS -L$"
+fi
 
 ## One way is to specify both include and lib paths
 
@@ -3144,6 +3216,14 @@ if test "$MPITYPE" = "OPENMPI"; then
 fi
 
 echo "$MSG"
+# test cuda stuff
+#AC_SUBST(BACKEND)
+#AC_SUBST(CU_INCL)
+#AC_SUBST(R_CPIC)
+#AC_SUBST(R_LIBS)
+#AC_SUBST(R_INCL)
+#AC_SUBST(RCPP_INCL)
+#AC_SUBST(NVCC)
 
 
 

@@ -12,20 +12,22 @@
 
 #include "util.h"
 
+// TODO : figure out how to include the error function 'Rf_error'
+//        Fic the makefile to link the R header files
 void die(const char *fmt, ...)
 {
   va_list argp;
   va_start(argp, fmt);
   char *ret;
   if (vasprintf(&ret, fmt, argp) == -1) {
-    error("vasprintf failed\n");
+    // error("vasprintf failed\n");
     return;
   }
   va_end(argp);
   char buf[1024];
   sprintf(buf, "%s\n", ret);
   free(ret);
-  error(buf);
+  // error(buf); 
 }
 
 void *safe_malloc(size_t size)
