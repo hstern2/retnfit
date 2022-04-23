@@ -5,7 +5,7 @@ Target score: 0
 Exchange interval: 1000
 Adjust move size interval: 7001
 Max states: 10
-Initial score: 6
+Initial score: inf
 
 Ran 100000 steps.
 Temperature: 0.935255
