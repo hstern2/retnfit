@@ -478,56 +478,6 @@ static double score_for_trajectory(const experiment_t e, const trajectory_t t)
   return s;
 }
 
-__global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
-  // TODO: something 
-  int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (globalIdx < n) {
-    const experiment_t e = &eset->experiment[globalIdx];
-    trajectory_t traj = &trajectories[globalIdx];
-    // TODO: how call function from within the kernel?
-    network_advance_until_repetition(net, e, traj, max_states);
-    const double s = repetition_found(traj) ? score_for_trajectory(e, traj) : limit;
-    s_kernels[globalIdx] = s;
-  }
-
-} 
-
-static double cuda_score_host(network_t n, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states) {
-  double s_tot = 0;
-  // initialize memory
-  int N = eset->n_experiments;
-  // TODO: network_t, experiment_set_t, trajectory_t
-  double d_limits;
-  int d_max_states;
-  double *s_kernels, *d_s_kernels;
-  s_kernels = (double*)malloc(N*sizeof(double));
-  for (i = 0; i < N; i++) {
-    s_kernels[i] = 0.0;
-  }
-  // copy data
-  cudaMalloc(&d_limits, sizeof(double));
-  cudaMalloc(&d_max_states, sizeof(int));
-  cudaMalloc(&d_s_kernels, N*sizeof(double));
-
-  cudaMemcpy(d_max_states, max_states, sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_limits, limits, sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_s_kernels, s_kernels, N*sizeof(double), cudaMemcpyHostToDevice);
-
-  // launch kernel
-  // TODO: figure how to sync (s_tot <= limit) check 
-
-  // synchronize and free memomry
-
-
-  // calculate s_total
-  for (i = 0; i < eset->n_experiments; i++) {
-    s_tot += s_kernels[i];
-  }
-
-  return s_tot;
-
-}
-
 static double score(network_t n, const experiment_set_t eset, trajectory_t trajectories, 
                     double limit, int max_states)
 {

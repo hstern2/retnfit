@@ -118,17 +118,17 @@ trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node)
 }
 
 
-__global__ static int cuda_repetition_found(const trajectory_t t)
+__device__ static int cuda_repetition_found(const trajectory_t t)
 {
   return t->repetition_end > 0;
 }
 
-__global__ static double score_for_state(const experiment_t e, int i, int s)
+__device__ static double cuda_score_for_state(const experiment_t e, int i, int s)
 {
-  // return e->score[i][s+1];
+  return e->score[i][s+1];
 }
 
-__global__ double cuda_score_for_trajectory(const experiment_t e, const trajectory_t t)
+__device__ double cuda_score_for_trajectory(const experiment_t e, const trajectory_t t)
 {
   int i_node;
   double s = 0;
@@ -136,20 +136,20 @@ __global__ double cuda_score_for_trajectory(const experiment_t e, const trajecto
     const int si = t->steady_state[i_node];
     if (si == UNDEFINED)
       return LARGE_SCORE;
-    s += score_for_state(e, i_node, si);
+    s += cuda_score_for_state(e, i_node, si);
   }
   return s;
 }
 
-__global__ static int cuda_most_probable_state(const experiment_t e, int i)
+__device__ static int cuda_most_probable_state(const experiment_t e, int i)
 {
   int min_s = -1;
-  double min = score_for_state(e,i,-1);
+  double min = cuda_score_for_state(e,i,-1);
   int s;
   for (s = 0; s <= 1; s++)
-    if (score_for_state(e,i,s) < min) {
+    if (cuda_score_for_state(e,i,s) < min) {
       min_s = s;
-      min = score_for_state(e,i,s);
+      min = cuda_score_for_state(e,i,s);
     }
   return min_s;
 }
@@ -233,11 +233,11 @@ __global__ static void cuda_advance(const network_t n, trajectory_t traj, int i_
 }
 __global__ void cuda_network_advance_until_repetition(const network_t n, const experiment_t e, trajectory_t t, int max_states)
 {
-  cuda_init_trajectory(t, e, n->n_node);
+  cuda_init_trajectory<<<1,1>>>(t, e, n->n_node); // TODO: figure out grid, block
   int i;
   for (i = 1; i < max_states && !cuda_repetition_found(t); i++) {
-    cuda_advance(n,t,i);
-    cuda_check_for_repetition(t,i);
+    cuda_advance<<<1,1>>>(n,t,i); // TODO: __global__ function call must be configured
+    cuda_check_for_repetition<<<1,1>>>(t,i); // TODO: __global__ function call must be configured
   }
 }
 
@@ -248,7 +248,7 @@ __global__ void cuda_score_device(int n, network_t net, const experiment_set_t e
     const experiment_t e = &eset->experiment[globalIdx];
     trajectory_t traj = &trajectories[globalIdx];
     // TODO: how call function from within the kernel?
-    cuda_network_advance_until_repetition(net, e, traj, max_states);
+    cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
     const double s = cuda_repetition_found(traj) ? cuda_score_for_trajectory(e, traj) : limit;
     s_kernels[globalIdx] = s;
   }
