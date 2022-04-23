@@ -8,14 +8,16 @@ void run_monte_carlo(const int *i_exp,
                      const int *i_node,
                      const int *outcome,
                      const double *value,
-                     const int *is_perturbation)
+                     const int *is_perturbation,
+                     int len_i_exp)
 {
     // prepare data
     struct experiment_set experiment_set;
     struct network net;
 
     // Set parameters
-    int n = (sizeof(i_exp)) / sizeof(int);
+    int n = len_i_exp;
+    // int n = 9;
     double T_lo = 0.001;
     double T_hi = 2.0;
     double target_score = 0;
@@ -24,9 +26,9 @@ void run_monte_carlo(const int *i_exp,
     int exchange_interval = 1000;
     int adjust_move_size_interval = 7001;
     int n_cycles = 1000000;
-    int max_parents = 2;
+    int max_parents = 10;
     int n_write = 10;
-    FILE *output_file = fopen("debug.txt", "w");
+    FILE *output_file = fopen("../runs/debug.txt", "w");
 
     // initialize data structures
     experiment_set_init(&experiment_set, n, i_exp, i_node, outcome, value, is_perturbation);
@@ -155,7 +157,8 @@ void test()
                                    FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
                                    FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE};
 
-    run_monte_carlo(&i_exp[0], &i_node[0], &outcome[0], &value[0], &is_perturbation[0]);
+    int len_i_exp = sizeof(i_exp) / sizeof(i_exp[0]); 
+    run_monte_carlo(&i_exp[0], &i_node[0], &outcome[0], &value[0], &is_perturbation[0], len_i_exp);
 }
 
 int main()

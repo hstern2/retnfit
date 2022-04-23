@@ -14,4 +14,4 @@ clean:
 	rm retnfit_cuda
 
 c_driver:
-	
+	gcc -g driver.c gn.c array.c util.c -I$(INCLUDE) -lRmath -lm -o retnfit_cpu
