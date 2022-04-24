@@ -1,22 +1,22 @@
 Number of threads per process: 1
 Number of steps: 1000000
 Initial temperature: 2
-Target score: 20
+Target score: 0
 Exchange interval: 1000
 Adjust move size interval: 7001
 Max states: 10
 Initial score: inf
 
-Ran 1 steps.
-Temperature: 2
+Ran 86126 steps.
+Temperature: 1.03927
 Parent move acceptances since last adjust: 0
 Parent move tries since last adjust: 0
 Fraction of parent moves accepted since last adjust: 0
-Outcome move acceptances since last adjust: 1
-Outcome move tries since last adjust: 1
-Fraction of outcome moves accepted since last adjust: 1
+Outcome move acceptances since last adjust: 802
+Outcome move tries since last adjust: 2114
+Fraction of outcome moves accepted since last adjust: 0.379376
 Number of parent moves per cycle: 1
-Number of outcome moves per cycle: 1
-Best score: 7
-Best score (normalized): 0.12963
+Number of outcome moves per cycle: 3
+Best score: 0
+Best score (normalized): 0
 
