@@ -217,6 +217,7 @@ void test2() {
 
 int main()
 {
+    // /scratch/hstern2/retdemo
     test1();
     test2();
     return 0;

@@ -253,9 +253,9 @@ __global__ void cuda_score_device(int n, network_t net, const experiment_set_t e
   for (int i = 0; i < n; i++) {
     s_tot += s_kernels[i];
   }
-  if (s_tot > limit) {
-    return;
-  }
+  // if (s_tot > limit) {
+  //   return;
+  // }
   int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
   if (globalIdx < n) {
     const experiment_t e = &eset->experiment[globalIdx];
@@ -286,11 +286,13 @@ static double cuda_score_host(network_t gpu_n, const experiment_set_t gpu_eset, 
   // cudaMemcpy(gpu_s_kernels, s_kernels, N*sizeof(double), cudaMemcpyHostToDevice);
 
   // make grid and block sizes according to input
-  int TILE = 8;
-  dim3 dimGrid((N - 1)/TILE + 1, (N - 1)/TILE + 1);
-  dim3 dimBlock(TILE, 1, 1);
+  // int TILE = 8;
+  // dim3 dimGrid((N - 1)/TILE + 1, (N - 1)/TILE + 1);
+  // dim3 dimBlock(TILE, TILE, 1);
+  int numThreads = 32;
+  int numBlocks = (N + numThreads - 1) / numThreads;
   // launch kernel
-  cuda_score_device<<<dimGrid, dimBlock>>>(N, gpu_n, gpu_eset, gpu_trajectories, limit, max_states, gpu_s_kernels);
+  cuda_score_device<<<numBlocks, numThreads>>>(N, gpu_n, gpu_eset, gpu_trajectories, limit, max_states, gpu_s_kernels);
   // TODO: figure how to sync (s_tot <= limit) check [each kernel before starting checks]
   
   cudaDeviceSynchronize();
@@ -883,15 +885,12 @@ double network_monte_carlo(network_t n,
 
 // if CUDA, move the datastructures to Unified_Memory
 #ifdef USE_CUDA
-  network_t gpu_n = load_network_to_gpu(n);
+  n = load_network_to_gpu(n);
   experiment_set_t gpu_e = load_experiment_set_to_gpu(e);
   trajectory_t trajectories = new_trajectory_gpu(e->n_experiment, max_states, n_node);
-  double s = cuda_score_host(gpu_n, gpu_e, trajectories, HUGE_VAL, max_states), s_best = s;
+  double s = cuda_score_host(n, gpu_e, trajectories, HUGE_VAL, max_states), s_best = s;
 
   // free from unified memory
-  cudaFree(gpu_n);
-  cudaFree(gpu_e);
-  cudaFree(trajectories);
 #endif // END of USE_CUDA
 
 
@@ -953,7 +952,11 @@ double network_monte_carlo(network_t n,
       }
     }
     const double limit = s - T*log(uniform_random_from_0_to_1_exclusive());
+  #ifndef USE_CUDA
     const double s_new = score(n, e, trajectories, limit, max_states);
+  #else
+    const double s_new = cuda_score_host(n, gpu_e, trajectories, limit, max_states);
+  #endif
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
       if (is_parent_move)
@@ -1068,15 +1071,11 @@ double network_monte_carlo(network_t n,
   trajectories_delete(trajectories, e->n_experiment);
   #endif
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
+  cudaFree(n);
+  cudaFree(gpu_e);
   cudaFree(trajectories);
-  #endif
-
-// #ifdef USE_CUDA
-//   cudaFree(gpu_n);
-//   cudaFree(gpu_e);
-//   cudaFree(gpu_trajectories);
-// #endif // END of USE_CUDA
+#endif // END of USE_CUDA
 
   return s_best;
 }

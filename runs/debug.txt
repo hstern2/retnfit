@@ -7,16 +7,3 @@ Adjust move size interval: 7001
 Max states: 10
 Initial score: inf
 
-Ran 86126 steps.
-Temperature: 1.03927
-Parent move acceptances since last adjust: 0
-Parent move tries since last adjust: 0
-Fraction of parent moves accepted since last adjust: 0
-Outcome move acceptances since last adjust: 802
-Outcome move tries since last adjust: 2114
-Fraction of outcome moves accepted since last adjust: 0.379376
-Number of parent moves per cycle: 1
-Number of outcome moves per cycle: 3
-Best score: 0
-Best score (normalized): 0
-
