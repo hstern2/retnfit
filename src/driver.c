@@ -1,10 +1,11 @@
 #include <stdlib.h>
+#include <assert.h>
 #include "gn.h"
 
 #define TRUE 1
 #define FALSE 0
 
-void run_monte_carlo(const int *i_exp,
+double run_monte_carlo(const int *i_exp,
                      const int *i_node,
                      const int *outcome,
                      const double *value,
@@ -57,9 +58,10 @@ void run_monte_carlo(const int *i_exp,
         adjust_move_size_interval,
         max_states);
     printf("Finished running score, obtained value %lf\n", score);
+    return score;
 }
 
-void test()
+void test1()
 {
     const int i_exp[] = {0, 0, 0, 0, 0, 0, 0, 0, 0,
                          1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -158,11 +160,64 @@ void test()
                                    FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE};
 
     int len_i_exp = sizeof(i_exp) / sizeof(i_exp[0]); 
-    run_monte_carlo(&i_exp[0], &i_node[0], &outcome[0], &value[0], &is_perturbation[0], len_i_exp);
+    double score = run_monte_carlo(&i_exp[0], &i_node[0], &outcome[0], &value[0], &is_perturbation[0], len_i_exp);
+    assert(score == 0.00);
+}
+
+void test2() {
+    const int i_exp[] = {0,0,0, 0,0,0, 0,0,0, 0,0,0,
+                          1,1,1, 1,1,1, 1,1,1, 1,1,1,
+                          2,2,2, 2,2,2, 2,2,2, 2,2,2,
+                          3,3,3, 3,3,3, 3,3,3, 3,3,3,
+                          4,4,4, 4,4,4, 4,4,4, 4,4,4,
+                          5,5,5, 5,5,5, 5,5,5, 5,5,5,
+                          6,6,6, 6,6,6, 6,6,6, 6,6,6,
+                          7,7,7, 7,7,7, 7,7,7, 7,7,7};
+    const int i_node[] = {0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3,
+                           0,0,0, 1,1,1, 2,2,2, 3,3,3};
+
+    const int outcome[] = {-1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1,
+                            -1,0,1, -1,0,1, -1,0,1, -1,0,1};
+
+    const double value[] = {0,1,2, 0,1,2, 0,1,2, 0,1,2,
+                            2,1,0, 0,1,2, 0,1,2, 0,1,2,
+                            2,1,0, 2,1,0, 0,1,2, 0,1,2,
+                            2,1,0, 2,1,0, 2,1,0, 0,1,2,
+                            2,1,0, 2,1,0, 2,1,0, 2,1,0,
+                            0,1,2, 2,1,0, 2,1,0, 2,1,0,
+                            0,1,2, 0,1,2, 2,1,0, 2,1,0,
+                            0,1,2, 0,1,2, 0,1,2, 2,1,0};
+
+    const int is_perturbation[] = {TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE,
+                         TRUE,TRUE,TRUE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  TRUE,TRUE,TRUE, FALSE,FALSE,FALSE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,
+                         FALSE,FALSE,FALSE,  FALSE,FALSE,FALSE, FALSE,FALSE,FALSE, TRUE,TRUE,TRUE};
+
+    int len_i_exp = sizeof(i_exp) / sizeof(i_exp[0]);
+    double score = run_monte_carlo(&i_exp[0], &i_node[0], &outcome[0], &value[0], &is_perturbation[0], len_i_exp);
+    assert(score == 0.00);
+
 }
 
 int main()
 {
-    test();
+    test1();
+    test2();
     return 0;
 }

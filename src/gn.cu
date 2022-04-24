@@ -1043,7 +1043,7 @@ double network_monte_carlo(network_t n,
     /* adjust number of moves */
     if (parent_tries == adjust_move_size_interval) { 
       const double f = fraction(parent_acc, parent_tries);
-      if (f > 0.5 && parent_moves < n_node)
+      if (f > 0.5 && (int) parent_moves < n_node)
 	parent_moves++;
       else if (f < 0.5 && parent_moves > 1)
 	parent_moves--;
