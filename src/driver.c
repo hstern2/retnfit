@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
 #include "gn.h"
 
 #define TRUE 1
 #define FALSE 0
+#define BILLION 1E9
 
 double run_monte_carlo(const int *i_exp,
                      const int *i_node,
@@ -218,7 +220,20 @@ void test2() {
 int main()
 {
     // /scratch/hstern2/retdemo
+    struct timespec clock_start1, clock_end1, clock_start2, clock_end2;
+    double total_time1, total_time2;
+    clock_gettime(CLOCK_REALTIME, &clock_start1);
     test1();
-    test2();
+    clock_gettime(CLOCK_REALTIME, &clock_end1);
+
+    //clock_gettime(CLOCK_REALTIME, &clock_start2);
+    //test2();
+    //clock_gettime(CLOCK_REALTIME, &clock_end2);
+
+    total_time1 = (clock_end1.tv_sec - clock_start1.tv_sec) + (clock_end1.tv_nsec - clock_start1.tv_nsec) / BILLION;
+    //total_time2 = (clock_end2.tv_sec - clock_start2.tv_sec) + (clock_end2.tv_nsec - clock_start2.tv_nsec) / BILLION;
+    
+    printf("Time Taken for Test 1 : %f sec\n", total_time1);
+    //printf("Time Taken for Test 2 : %f sec\n", total_time2);
     return 0;
 }

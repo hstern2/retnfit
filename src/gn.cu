@@ -43,50 +43,6 @@
 // - score_for_trajectory() [Shreyan]
 //    - score_for_state() [duplicate] [Shreyan]
 
-// network_t load_network_to_gpu(network_t n)
-// {
-//     network_t d_n;
-
-//     cudaMallocManaged(&d_n, sizeof(network_t));
-//     d_n->n_node = n->n_node;
-//     d_n->n_parent = n->n_parent;
-//     d_n->n_outcome = n->n_outcome;
-
-//     int *parent_data;
-//     int parent_size = n->n_parent;
-//     cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
-//     cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
-//     // Here the n->parent is a n_node x n_parent matrix 
-//     // and the way you have defined it is as n_parent x n_parent
-//     for (int i=0;i<d_n->n_node;i++) {
-//         for (int j=0;j<parent_size;j++) {
-//             parent_data[i*parent_size+j] = n->parent[i][j];
-//         }
-//     }
-
-//     for (int i=0;i<d_n->n_node;i++) {
-//         d_n->parent[i] = &(parent_data[i*parent_size]);
-//     }
-
-//     int *outcome_data;
-//     int outcome_size = n->n_outcome;
-//     cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
-//     cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
-//     // Here the n->outcome is a n_node x n_outcome matrix 
-//     // and the way you have defined it is as n_outcome x n_outcome
-//     for (int i=0;i < d_n->n_node;i++) {
-//         for (int j=0;j<outcome_size;j++) {
-//             outcome_data[i*outcome_size+j] = n->outcome[i][j];
-//         }
-//     }
-
-//     for (int i=0;i<d_n->n_node;i++) {
-//         d_n->outcome[i] = &(outcome_data[i*outcome_size]);
-//     }
-
-//     return d_n;
-// }
-
 network_t load_network_to_gpu(network_t n)
 {
   network_t d_n;
@@ -141,24 +97,6 @@ experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
     cudaMemcpy(d_eset->experiment, eset->experiment, size_of_experiments, cudaMemcpyHostToDevice);
     return d_eset;
 }
-
-// trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node) 
-// {
-//     trajectory_t d_t;
-//     cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
-//     for (int i=0;i<ntraj;i++) 
-//     {
-//         int *data;
-//         trajectory_t curr = &d_t[i];
-//         cudaMallocManaged(&data, max_states*n_node*sizeof(int));
-//         cudaMallocManaged(&curr->state, max_states * sizeof(int *));
-//         for (int j=0;j<max_states;j++) 
-//         {
-//             curr->state[j] = &(data[j*n_node]);
-//         }
-//     }
-//     return d_t;
-// }
 
 trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node, trajectory_t t) 
 {
@@ -223,21 +161,21 @@ __device__ static int cuda_most_probable_state(const experiment_t e, int i)
   return min_s;
 }
 
-__global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
-  // printf("CUDA Init Traj Called\n");
-  t->n_node = n_node;
-  int i;
-  for (i = 0; i < t->n_node; i++) {
-    t->is_persistent[i] = 0;
-    t->state[0][i] = 0;
-  }
-  t->repetition_start = t->repetition_end = 0;
-  for (i = 0; i < e->n_perturbed; i++) {
-    const int j = e->perturbed[i];
-    t->is_persistent[j] = 1;
-    t->state[0][j] = cuda_most_probable_state(e,j);
-  }
-}
+// __global__ void cuda_init_trajectory(trajectory_t t, const experiment_t e, int n_node) {
+//   // printf("CUDA Init Traj Called\n");
+//   t->n_node = n_node;
+//   int i;
+//   for (i = 0; i < t->n_node; i++) {
+//     t->is_persistent[i] = 0;
+//     t->state[0][i] = 0;
+//   }
+//   t->repetition_start = t->repetition_end = 0;
+//   for (i = 0; i < e->n_perturbed; i++) {
+//     const int j = e->perturbed[i];
+//     t->is_persistent[j] = 1;
+//     t->state[0][j] = cuda_most_probable_state(e,j);
+//   }
+// }
 
 __global__ void cuda_check_for_repetition(trajectory_t traj, int i_state)
 {
@@ -282,40 +220,66 @@ __global__ void cuda_check_for_repetition(trajectory_t traj, int i_state)
     traj->steady_state[i_node] = UNDEFINED;
 }
 
-__global__ static void cuda_advance(const network_t n, trajectory_t traj, int i_state)
-{
-  // printf("CUDA Advance Called\n");
-  const int n_node = n->n_node;
-  /* find new state */
-  int *si = &traj->state[i_state][0];
-  const int *si1 = &traj->state[i_state - 1][0];
-  int i_node;
-  for (i_node = 0; i_node < n_node; i_node++) {
-    if (traj->is_persistent[i_node] || n->n_parent == 0) {
-      si[i_node] = si1[i_node];
-    } else {
-      int ip, a = 0;
-      for (ip = n->n_parent - 1; ip >= 0; ip--) {
-	a *= 3;
-	a += si1[n->parent[i_node][ip]] + 1;
-      }
-      si[i_node] = n->outcome[i_node][a];
-    }
-  }
-}
-__global__ void cuda_network_advance_until_repetition(const network_t n, const experiment_t e, trajectory_t t, int max_states)
-{
-  // printf("CUDA Network Advance until Repeat Called\n");
-  cuda_init_trajectory<<<1,1>>>(t, e, n->n_node); // TODO: figure out grid, block
-  cudaDeviceSynchronize();
-  int i;
-  for (i = 1; i < max_states && !cuda_repetition_found(t); i++) {
-    cuda_advance<<<1,1>>>(n,t,i); // TODO: __global__ function call must be configured
-    cudaDeviceSynchronize();
-    cuda_check_for_repetition<<<1,1>>>(t,i); // TODO: __global__ function call must be configured
-    cudaDeviceSynchronize();
-  }
-}
+// __global__ static void cuda_advance(const network_t n, trajectory_t traj, int i_state)
+// {
+//   // printf("CUDA Advance Called\n");
+//   const int n_node = n->n_node;
+//   /* find new state */
+//   int *si = &traj->state[i_state][0];
+//   const int *si1 = &traj->state[i_state - 1][0];
+//   int i_node;
+//   for (i_node = 0; i_node < n_node; i_node++) {
+//     if (traj->is_persistent[i_node] || n->n_parent == 0) {
+//       si[i_node] = si1[i_node];
+//     } else {
+//       int ip, a = 0;
+//       for (ip = n->n_parent - 1; ip >= 0; ip--) {
+// 	a *= 3;
+// 	a += si1[n->parent[i_node][ip]] + 1;
+//       }
+//       si[i_node] = n->outcome[i_node][a];
+//     }
+//   }
+// }
+// __global__ void cuda_network_advance_until_repetition(const network_t n, const experiment_t e, trajectory_t t, int max_states)
+// {
+//   // printf("CUDA Network Advance until Repeat Called\n");
+//   cuda_init_trajectory<<<1,1>>>(t, e, n->n_node); // TODO: figure out grid, block
+//   cudaDeviceSynchronize();
+//   int i;
+//   for (i = 1; i < max_states && !cuda_repetition_found(t); i++) {
+//     cuda_advance<<<1,1>>>(n,t,i); // TODO: __global__ function call must be configured
+//     cudaDeviceSynchronize();
+//     cuda_check_for_repetition<<<1,1>>>(t,i); // TODO: __global__ function call must be configured
+//     cudaDeviceSynchronize();
+//   }
+// }
+
+// __global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
+//   // TODO: something 
+//   // printf("CUDA Score Device Called\n");
+//   double s_tot = 0.0;
+//   for (int i = 0; i < n; i++) {
+//     s_tot += s_kernels[i];
+//   }
+//   // printf("s_total = %d\n", s_tot);
+//   if (s_tot <= limit) {
+//     int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    
+//     if (globalIdx < n) {
+//       // printf("global_idx = %d\n", globalIdx);
+//       const experiment_t e = &eset->experiment[globalIdx];
+//       trajectory_t traj = &trajectories[globalIdx];
+//       // TODO: how call function from within the kernel?
+//       cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
+//       cudaDeviceSynchronize();
+//       const double s = cuda_repetition_found(traj) ? cuda_score_for_trajectory(e, traj) : limit;
+//       // printf("%d\n", s);
+//       s_kernels[globalIdx] = s;
+//     }
+//   }
+// }
+
 
 __global__ void cuda_score_device(int n, network_t net, const experiment_set_t eset, trajectory_t trajectories, double limit, int max_states, double *s_kernels) {
   // TODO: something 
@@ -324,19 +288,109 @@ __global__ void cuda_score_device(int n, network_t net, const experiment_set_t e
   for (int i = 0; i < n; i++) {
     s_tot += s_kernels[i];
   }
-  printf("s_total = %d\n", s_tot);
+  // printf("s_total = %d\n", s_tot);
   if (s_tot <= limit) {
     int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (globalIdx < n) {
-      printf("global_idx = %d\n", globalIdx);
+      // printf("global_idx = %d\n", globalIdx);
       const experiment_t e = &eset->experiment[globalIdx];
       trajectory_t traj = &trajectories[globalIdx];
-      // TODO: how call function from within the kernel?
-      cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
-      cudaDeviceSynchronize();
+      
+      
+      // cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
+      // cudaDeviceSynchronize();
+      // cuda_network_advance_until_repettion code [cnaur]
+      
+      // cuda_init_trajectory<<<1,1>>>(traj, e, net->n_node);
+      // cudaDeviceSynchronize();
+      // cuda_init_traj code (cit)
+      traj->n_node = net->n_node;
+      int cit_i;
+      for (cit_i = 0; cit_i < traj->n_node; cit_i++) {
+        traj->is_persistent[cit_i] = 0;
+        traj->state[0][cit_i] = 0;
+      }
+      traj->repetition_start = traj->repetition_end = 0;
+      for (cit_i = 0; cit_i < e->n_perturbed; cit_i++) {
+        const int j = e->perturbed[cit_i];
+        traj->is_persistent[j] = 1;
+        traj->state[0][j] = cuda_most_probable_state(e,j);
+      }
+
+      int cnaur_i = 0;
+      for (cnaur_i = 1; cnaur_i < max_states && !cuda_repetition_found(traj); cnaur_i++) {
+        // cuda_advance<<<1, 1>>>(net, traj, cnaur_i);
+        // cudaDeviceSynchronize();
+        // cuda advance code [ca]
+        const int ca_n_node = net->n_node;
+        /* find new state */
+        int *ca_si = &traj->state[cnaur_i][0];
+        const int *ca_sil = &traj->state[cnaur_i - 1][0];
+        int ca_i_node;
+        for (ca_i_node = 0; ca_i_node < ca_n_node; ca_i_node++) {
+          if (traj->is_persistent[ca_i_node] || net->n_parent == 0) {
+            ca_si[ca_i_node] = ca_sil[ca_i_node];
+          } else {
+            int ca_ip, ca_a = 0;
+            for (ca_ip = net->n_parent - 1; ca_ip >= 0; ca_ip --) {
+              ca_a *= 3;
+              ca_a += ca_sil[net->parent[ca_i_node][ca_ip]] + 1;
+            }
+            ca_si[ca_i_node] = net->outcome[ca_i_node][ca_a];
+          }
+        }
+
+        // cuda_check_for_repetition<<<1,1>>>(traj, cnaur_i);
+        // cudaDeviceSynchronize();
+        // cuda check for repetition code [ccfr]
+        const int ccfr_n_node = traj->n_node;
+        int ccfr_i_node, ccfr_j_state;
+        const int *ccfr_si = &traj->state[cnaur_i][0];
+        bool ccfr_rep_found = false;
+        for (ccfr_j_state = 0; ccfr_j_state < cnaur_i && !ccfr_rep_found; ccfr_j_state++)
+        {
+          const int *ccfr_sj = &traj->state[ccfr_j_state][0];
+          for (ccfr_i_node = 0; ccfr_i_node < ccfr_n_node; ccfr_i_node++)
+            if (ccfr_si[ccfr_i_node] != ccfr_sj[ccfr_i_node])
+              break;
+          if (ccfr_i_node < ccfr_n_node)
+            continue;
+          /* repetition found - create summary */
+          traj->repetition_start = ccfr_j_state;
+          traj->repetition_end = cnaur_i;
+          for (ccfr_i_node = 0; ccfr_i_node < traj->n_node; ccfr_i_node++)
+          {
+            int ccfr_k, ccfr_visited_plus = 0, ccfr_visited_minus = 0;
+            for (ccfr_k = traj->repetition_start; ccfr_k <= traj->repetition_end; ccfr_k++)
+              if (traj->state[ccfr_k][ccfr_i_node] == 1)
+                ccfr_visited_plus = 1;
+              else if (traj->state[ccfr_k][ccfr_i_node] == -1)
+                ccfr_visited_minus = 1;
+            if (ccfr_visited_plus && ccfr_visited_minus)
+              traj->steady_state[ccfr_i_node] = UNDEFINED;
+            else if (ccfr_visited_plus)
+              traj->steady_state[ccfr_i_node] = 1;
+            else if (ccfr_visited_minus)
+              traj->steady_state[ccfr_i_node] = -1;
+            else
+              traj->steady_state[ccfr_i_node] = 0;
+          }
+          // return;
+          ccfr_rep_found = true;
+        }
+        /* no repetition found */
+        if (!ccfr_rep_found) {
+          traj->repetition_start = 0;
+          traj->repetition_end = 0;
+          for (ccfr_i_node = 0; ccfr_i_node < ccfr_n_node; ccfr_i_node++) {
+            traj->steady_state[ccfr_i_node] = UNDEFINED;
+          }
+        }
+      }
+
       const double s = cuda_repetition_found(traj) ? cuda_score_for_trajectory(e, traj) : limit;
-      printf("%d\n", s);
+      // printf("%d\n", s);
       s_kernels[globalIdx] = s;
     }
   }
@@ -1031,7 +1085,7 @@ double network_monte_carlo(network_t n,
     const double s_new = score(n, e, trajectories, limit, max_states);
   #else
     const double s_new = cuda_score_host(n, gpu_e, trajectories, limit, max_states);
-    printf("Score is %.2f\n", s_new);
+    // printf("Score is %.2f\n", s_new);
   #endif
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
