@@ -43,19 +43,63 @@
 // - score_for_trajectory() [Shreyan]
 //    - score_for_state() [duplicate] [Shreyan]
 
+// network_t load_network_to_gpu(network_t n)
+// {
+//     network_t d_n;
+
+//     cudaMallocManaged(&d_n, sizeof(network_t));
+//     d_n->n_node = n->n_node;
+//     d_n->n_parent = n->n_parent;
+//     d_n->n_outcome = n->n_outcome;
+
+//     int *parent_data;
+//     int parent_size = n->n_parent;
+//     cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
+//     cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
+//     // Here the n->parent is a n_node x n_parent matrix 
+//     // and the way you have defined it is as n_parent x n_parent
+//     for (int i=0;i<d_n->n_node;i++) {
+//         for (int j=0;j<parent_size;j++) {
+//             parent_data[i*parent_size+j] = n->parent[i][j];
+//         }
+//     }
+
+//     for (int i=0;i<d_n->n_node;i++) {
+//         d_n->parent[i] = &(parent_data[i*parent_size]);
+//     }
+
+//     int *outcome_data;
+//     int outcome_size = n->n_outcome;
+//     cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
+//     cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
+//     // Here the n->outcome is a n_node x n_outcome matrix 
+//     // and the way you have defined it is as n_outcome x n_outcome
+//     for (int i=0;i < d_n->n_node;i++) {
+//         for (int j=0;j<outcome_size;j++) {
+//             outcome_data[i*outcome_size+j] = n->outcome[i][j];
+//         }
+//     }
+
+//     for (int i=0;i<d_n->n_node;i++) {
+//         d_n->outcome[i] = &(outcome_data[i*outcome_size]);
+//     }
+
+//     return d_n;
+// }
+
 network_t load_network_to_gpu(network_t n)
 {
-    network_t d_n;
+  network_t d_n;
 
-    cudaMallocManaged(&d_n, sizeof(network_t));
-    d_n->n_node = n->n_node;
-    d_n->n_parent = n->n_parent;
-    d_n->n_outcome = n->n_outcome;
+  cudaMallocManaged(&d_n, sizeof(network_t));
+  d_n->n_node = n->n_node;
+  d_n->n_parent = n->n_parent;
+  d_n->n_outcome = n->n_outcome;
 
     int *parent_data;
     int parent_size = n->n_parent;
-    cudaMallocManaged(&parent_data, parent_size * parent_size * sizeof(int));
-    cudaMallocManaged(&d_n->parent, parent_size * sizeof(int *));
+    cudaMallocManaged(&parent_data, parent_size * n->n_node * sizeof(int));
+    cudaMallocManaged(&d_n->parent, n->n_node * sizeof(int *));
     // Here the n->parent is a n_node x n_parent matrix 
     // and the way you have defined it is as n_parent x n_parent
     for (int i=0;i<d_n->n_node;i++) {
@@ -64,27 +108,26 @@ network_t load_network_to_gpu(network_t n)
         }
     }
 
-    for (int i=0;i<d_n->n_node;i++) {
-        d_n->parent[i] = &(parent_data[i*parent_size]);
-    }
+  for (int i=0;i<d_n->n_node;i++) {
+    d_n->parent[i] = &(parent_data[i*parent_size]);
+  }
 
-    int *outcome_data;
-    int outcome_size = n->n_outcome;
-    cudaMallocManaged(&outcome_data, outcome_size*outcome_size*sizeof(int));
-    cudaMallocManaged(&d_n->outcome, outcome_size * sizeof(int *));
-    // Here the n->outcome is a n_node x n_outcome matrix 
-    // and the way you have defined it is as n_outcome x n_outcome
-    for (int i=0;i < d_n->n_node;i++) {
-        for (int j=0;j<outcome_size;j++) {
-            outcome_data[i*outcome_size+j] = n->outcome[i][j];
-        }
+  int *outcome_data;
+  int outcome_size = n->n_outcome;
+  cudaMallocManaged(&outcome_data, outcome_size*n->n_node*sizeof(int));
+  cudaMallocManaged(&d_n->outcome, n->n_node * sizeof(int *));
+  // QUESTION: Here the n->outcome is a n_node x n_outcome matrix 
+  //           and the way you have defined it is as n_outcome x n_outcome
+  for (int i=0;i < d_n->n_node;i++) {
+    for (int j=0;j<outcome_size;j++) {
+      outcome_data[i*outcome_size+j] = n->outcome[i][j];
     }
+  }
 
-    for (int i=0;i<d_n->n_node;i++) {
-        d_n->outcome[i] = &(outcome_data[i*outcome_size]);
-    }
-
-    return d_n;
+  for (int i=0;i<d_n->n_node;i++) {
+    d_n->outcome[i] = &(outcome_data[i*outcome_size]);
+  }
+  return d_n;
 }
 
 experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
@@ -99,24 +142,49 @@ experiment_set_t load_experiment_set_to_gpu(experiment_set_t eset) {
     return d_eset;
 }
 
-trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node) 
-{
-    trajectory_t d_t;
-    cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
-    for (int i=0;i<ntraj;i++) 
-    {
-        int *data;
-        trajectory_t curr = &d_t[i];
-        cudaMallocManaged(&data, max_states*n_node*sizeof(int));
-        cudaMallocManaged(&curr->state, max_states * sizeof(int *));
-        for (int j=0;j<max_states;j++) 
-        {
-            curr->state[j] = &(data[j*n_node]);
-        }
-    }
-    return d_t;
-}
+// trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node) 
+// {
+//     trajectory_t d_t;
+//     cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
+//     for (int i=0;i<ntraj;i++) 
+//     {
+//         int *data;
+//         trajectory_t curr = &d_t[i];
+//         cudaMallocManaged(&data, max_states*n_node*sizeof(int));
+//         cudaMallocManaged(&curr->state, max_states * sizeof(int *));
+//         for (int j=0;j<max_states;j++) 
+//         {
+//             curr->state[j] = &(data[j*n_node]);
+//         }
+//     }
+//     return d_t;
+// }
 
+trajectory_t new_trajectory_gpu(int ntraj, int max_states, int n_node, trajectory_t t) 
+{
+  trajectory_t d_t;
+  cudaMallocManaged(&d_t, ntraj*sizeof(trajectory));
+  for (int i=0;i<ntraj;i++) 
+  {
+      int *data;
+      trajectory_t curr = &d_t[i];
+      trajectory_t toCopy = &t[i];
+      cudaMallocManaged(&data, max_states*n_node*sizeof(int));
+      for (int j=0;j<max_states;j++)
+      {
+        for (int k=0;k<n_node;k++)
+        {
+          data[j*n_node+k] = toCopy->state[j][k];
+        }
+      }
+      cudaMallocManaged(&curr->state, max_states * sizeof(int *));
+      for (int j=0;j<max_states;j++) 
+      {
+          curr->state[j] = &(data[j*n_node]);
+      }
+  }
+  return d_t;
+}
 
 __device__ static int cuda_repetition_found(const trajectory_t t)
 {
@@ -239,10 +307,13 @@ __global__ void cuda_network_advance_until_repetition(const network_t n, const e
 {
   // printf("CUDA Network Advance until Repeat Called\n");
   cuda_init_trajectory<<<1,1>>>(t, e, n->n_node); // TODO: figure out grid, block
+  cudaDeviceSynchronize();
   int i;
   for (i = 1; i < max_states && !cuda_repetition_found(t); i++) {
     cuda_advance<<<1,1>>>(n,t,i); // TODO: __global__ function call must be configured
+    cudaDeviceSynchronize();
     cuda_check_for_repetition<<<1,1>>>(t,i); // TODO: __global__ function call must be configured
+    cudaDeviceSynchronize();
   }
 }
 
@@ -253,19 +324,22 @@ __global__ void cuda_score_device(int n, network_t net, const experiment_set_t e
   for (int i = 0; i < n; i++) {
     s_tot += s_kernels[i];
   }
-  // if (s_tot > limit) {
-  //   return;
-  // }
-  int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (globalIdx < n) {
-    const experiment_t e = &eset->experiment[globalIdx];
-    trajectory_t traj = &trajectories[globalIdx];
-    // TODO: how call function from within the kernel?
-    cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
-    const double s = cuda_repetition_found(traj) ? cuda_score_for_trajectory(e, traj) : limit;
-    s_kernels[globalIdx] = s;
+  printf("s_total = %d\n", s_tot);
+  if (s_tot <= limit) {
+    int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (globalIdx < n) {
+      printf("global_idx = %d\n", globalIdx);
+      const experiment_t e = &eset->experiment[globalIdx];
+      trajectory_t traj = &trajectories[globalIdx];
+      // TODO: how call function from within the kernel?
+      cuda_network_advance_until_repetition<<<1,1>>>(net, e, traj, max_states); // TODO: __global__ function call must be configured
+      cudaDeviceSynchronize();
+      const double s = cuda_repetition_found(traj) ? cuda_score_for_trajectory(e, traj) : limit;
+      printf("%d\n", s);
+      s_kernels[globalIdx] = s;
+    }
   }
-
 }
 
 static double cuda_score_host(network_t gpu_n, const experiment_set_t gpu_eset, trajectory_t gpu_trajectories, double limit, int max_states) {
@@ -887,7 +961,8 @@ double network_monte_carlo(network_t n,
 #ifdef USE_CUDA
   n = load_network_to_gpu(n);
   experiment_set_t gpu_e = load_experiment_set_to_gpu(e);
-  trajectory_t trajectories = new_trajectory_gpu(e->n_experiment, max_states, n_node);
+  trajectory_t trajectories_temp = trajectories_new(e->n_experiment, max_states, n_node);
+  trajectory_t trajectories = new_trajectory_gpu(e->n_experiment, max_states, n_node, trajectories_temp);
   double s = cuda_score_host(n, gpu_e, trajectories, HUGE_VAL, max_states), s_best = s;
 
   // free from unified memory
@@ -956,6 +1031,7 @@ double network_monte_carlo(network_t n,
     const double s_new = score(n, e, trajectories, limit, max_states);
   #else
     const double s_new = cuda_score_host(n, gpu_e, trajectories, limit, max_states);
+    printf("Score is %.2f\n", s_new);
   #endif
     if (s_new < 0.9*LARGE_SCORE && s_new < limit) { 
       /* accepted */
