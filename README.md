@@ -20,3 +20,9 @@ For MPI version, run
 ```
 R CMD INSTALL --clean retnfit_0.99.17.tar.gz --configure-args='--with-mpi=/path/to/mpi-1.x  --with-Rmpi-type=OPENMPI'
 ```
+
+For CUDA version
+> - Update the ```driver.c``` file with the experiment data
+> - Go to ```src/``` and run ```make```
+> - This generates an executable ```retnfit_cuda```
+> - To run : ```./retnfit_cuda```
