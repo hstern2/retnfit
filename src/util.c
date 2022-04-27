@@ -2,6 +2,9 @@
 #define _GNU_SOURCE
 #endif
 
+#ifndef R_ERROR_H_
+#define R_ERROR_H_
+
 #include <stdarg.h>
 #include <ctype.h>
 #include <R.h>
@@ -20,16 +23,17 @@ void die(const char *fmt, ...)
   va_start(argp, fmt);
   char *ret;
   if (vasprintf(&ret, fmt, argp) == -1) {
-    // error("vasprintf failed\n");
+    error("vasprintf failed\n");
     return;
   }
   va_end(argp);
   char buf[1024];
   sprintf(buf, "%s\n", ret);
   free(ret);
-  // error(buf); 
+  error(buf); 
 }
 
+#endif
 void *safe_malloc(size_t size)
 {
   void *p = malloc(size);
