@@ -2,6 +2,42 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(DESCRIPTION)
 
+## CUDA & NVCC arguments
+R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
+R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`
+R_CPIC=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
+AC_ARG_WITH(cuda,
+            AC_HELP_STRING([--with-cuda=CUDA_PATH],
+                           [top level directory for cuda]),
+            [cuda_path=$withval])
+
+if test -n "${cuda_path}" ; then
+    cuda_path="${cuda_path}"
+    if test ! -f "${cuda_path}/include/cuda_runtime.h"; then
+        AC_MSG_ERROR([Value of --with-cuda-include does not contain cuda_runtime.h])
+    fi
+    AC_MSG_NOTICE("backend = CUDA")
+    BACKEND="CUDA"
+
+    AC_CHECK_FILE([${cuda_path}/bin/nvcc], [HAS_NVCC="yes"])
+    if test -z "${HAS_NVCC}"; then
+        AC_MSG_ERROR("No nvcc found in ${cuda_path}/bin. Check the path is correct")
+    else
+        AC_MSG_RESULT("nvcc found in ${cuda_path}/bin.")
+        NVCC="${cuda_path}/bin/nvcc"
+    fi
+    AC_CHECK_FILE([${cuda_path}/lib64/libcudart.so], [BIT64="yes"])
+    if test -z "${BIT64}"; then
+        AC_MSG_RESULT("Using ${cuda_path}/lib for cuda libs")
+        cu_libdir="${cuda_path}/lib"
+    else
+        AC_MSG_RESULT("Using ${cuda_path}/lib64 for CUDA libs")
+        cu_libdir="${cuda_path}/lib64"
+    fi
+    PKG_LIBS = "${PKG_LIBS} -L${cu_libdir} -Wl,-rpath,${cu_libdir} -lcudart"
+    LDFLAGS = "$LDFLAGS -L$"
+fi
+
 ## One way is to specify both include and lib paths
 AC_ARG_WITH([Rmpi-include],
             AC_HELP_STRING([--with-Rmpi-include=INCLUDE_PATH],
@@ -277,6 +313,14 @@ if test "$MPITYPE" = "OPENMPI"; then
 fi
 
 echo "$MSG"
+# test cuda stuff
+#AC_SUBST(BACKEND)
+#AC_SUBST(CU_INCL)
+#AC_SUBST(R_CPIC)
+#AC_SUBST(R_LIBS)
+#AC_SUBST(R_INCL)
+#AC_SUBST(RCPP_INCL)
+#AC_SUBST(NVCC)
 
 AC_SUBST(PKG_CFLAGS)
 AC_SUBST(PKG_LIBS)

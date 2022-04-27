@@ -2,6 +2,9 @@
 #define _GNU_SOURCE
 #endif
 
+#ifndef R_ERROR_H_
+#define R_ERROR_H_
+
 #include <stdarg.h>
 #include <ctype.h>
 #include <R.h>
@@ -12,6 +15,8 @@
 
 #include "util.h"
 
+// TODO : figure out how to include the error function 'Rf_error'
+//        Fic the makefile to link the R header files
 void die(const char *fmt, ...)
 {
   va_list argp;
@@ -25,9 +30,10 @@ void die(const char *fmt, ...)
   char buf[1024];
   sprintf(buf, "%s\n", ret);
   free(ret);
-  error(buf);
+  error(buf); 
 }
 
+#endif
 void *safe_malloc(size_t size)
 {
   void *p = malloc(size);

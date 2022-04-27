@@ -2,3 +2,32 @@
 
 PKG_CFLAGS   = @DEFS@ @PKG_CFLAGS@ $(ARCHCFLAGS)
 PKG_LIBS     = @PKG_LIBS@ $(ARCHLIB)
+
+
+R_LIBS = @R_LIBS@
+R_INC = @R_INCL@ @RCPP_INCL@ @CU_INCL@
+c_sources = $(wildcard *.c)
+c_sharedlibs = $(patsubst %.c, %.o, $(c_sources))
+
+OBJECTS = $(c_sharedlibs)
+
+CU_ARGS = -arch=sm_35 -rdc=true -std=c++11  -Xcompiler -Wall
+CU_INCL= @R_INCL@ @RCPP_INCL@ gn.cu
+NVCC=@NVCC@
+
+all: retnfit.so
+
+
+retnfit.so: $(OBJECTS)
+
+
+BACKEND = @BACKEND@
+
+ifeq "$(BACKEND)" "CUDA"
+%.o: %.c $(c_sources)
+	$(NVCC) --x=c -c $(CU_ARGS) $(CU_INCL) $< -o $@
+
+
+else
+retnfit.so: $(OBJECTS)
+endif
