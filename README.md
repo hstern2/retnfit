@@ -23,6 +23,6 @@ R CMD INSTALL --clean retnfit_0.99.17.tar.gz --configure-args='--with-mpi=/path/
 
 For CUDA version
 > - Update the ```driver.c``` file with the experiment data
-> - Go to ```src/``` and run ```make```
-> - This generates an executable ```retnfit_cuda```
-> - To run : ```./retnfit_cuda```
+> - Go to ```cuda/``` and run ```make```
+> - This generates an executable ```driver```
+> - To run : ```./driver```
