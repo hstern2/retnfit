@@ -1,5 +1,5 @@
 #!/bin/sh
 
-rm -rf ./chm ./config.* ./autom4te.* src-*
+rm -rf ./chm ./config.* ./autom4te.*
 cd src
 rm -rf Makevars Makedeps *.so *.o *.d *.dll *.a *.rc *.rds

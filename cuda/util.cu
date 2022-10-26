@@ -4,7 +4,7 @@
 
 #include <stdarg.h>
 #include <ctype.h>
-#include <R.h>
+#include <math.h>
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -18,14 +18,14 @@ void die(const char *fmt, ...)
   va_start(argp, fmt);
   char *ret;
   if (vasprintf(&ret, fmt, argp) == -1) {
-    error("vasprintf failed\n");
+    fprintf(stderr, "vasprintf failed\n");
     return;
   }
   va_end(argp);
   char buf[1024];
   sprintf(buf, "%s\n", ret);
   free(ret);
-  error(buf);
+  fprintf(stderr, buf);
 }
 
 void *safe_malloc(size_t size)
@@ -85,8 +85,8 @@ void read_line(FILE *f, char *buf, int n)
 
 double uniform_random_from_0_to_1_exclusive()
 {
-  /* return (double) random() / ((double) RAND_MAX + 1.0); */
-  return unif_rand();
+  return (double) random() / ((double) RAND_MAX + 1.0);
+  /* return unif_rand(); */
 }
 
 int random_int_inclusive(int a, int b)
