@@ -31,7 +31,7 @@ double run_monte_carlo(const int *i_exp,
     int n_cycles = 1000000;
     int max_parents = 10;
     int n_write = 10;
-    FILE *output_file = fopen("../runs/debug.txt", "w");
+    FILE *output_file = stderr; // fopen("../runs/debug.txt", "w");
 
     // initialize data structures
     experiment_set_init(&experiment_set, n, i_exp, i_node, outcome, value, is_perturbation);
