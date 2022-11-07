@@ -6,7 +6,7 @@ driver: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 clean:
-	rm -f *.o
+	rm -f *.o driver
 
 # patterns
 %.o: %.cu
