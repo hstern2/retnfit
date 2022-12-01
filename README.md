@@ -6,7 +6,7 @@
 
 * H. R. McMurray, A. Ambeskovic, L.A. Newman, J. Aldersley, V. Balakrishnan, B. Smith, H. A. Stern, H. Land, and M. N. McCall, "Gene network modeling via TopNet reveals functional dependencies between diverse tumor-critical mediator genes," *Cell Reports* **37**, 110136 (2021) [doi.org/10.1016/j.celrep.2021.110136](https://doi.org/10.1016/j.celrep.2021.110136)
 
-* H. R. McMurray, H. A. Stern, A. Ambeskovic, H. Land, and M. N. McCall, “Protocol to use TopNet for gene regulatory network modeling using gene expression data from perturbation experiments,” *STAR protocols* **3**, 101737 (2022)[doi.org/10.1016/j.xpro.2022.101737](https://doi.org/10.1016/j.xpro.2022.101737)
+* H. R. McMurray, H. A. Stern, A. Ambeskovic, H. Land, and M. N. McCall, “Protocol to use TopNet for gene regulatory network modeling using gene expression data from perturbation experiments,” *STAR protocols* **3**, 101737 (2022) [doi.org/10.1016/j.xpro.2022.101737](https://doi.org/10.1016/j.xpro.2022.101737)
 
 To install parallel (openMP and MPI) version, run 
 ```
