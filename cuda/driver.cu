@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <time.h>
 #include "gn.h"
+#include "util.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -31,7 +32,7 @@ double run_monte_carlo(const int *i_exp,
     int n_cycles = 1000000;
     int max_parents = 10;
     int n_write = 10;
-    FILE *output_file = stderr; // fopen("../runs/debug.txt", "w");
+    FILE *output_file = stderr;
 
     // initialize data structures
     experiment_set_init(&experiment_set, n, i_exp, i_node, outcome, value, is_perturbation);
@@ -217,6 +218,69 @@ void test2() {
 
 }
 
+static char *next_tok(char *s, const char *fname, const int nline)
+{
+   char *tok = strtok(s, ",");
+   if (!tok) {
+      fprintf(stderr, "%s:%d: tokenization error\n", fname, nline);
+      exit(1);
+   }
+   return tok;
+}
+
+int main(int argc, char *argv[])
+{
+  if (argc != 2) {
+    fprintf(stderr, "usage: driver <csvfile>\n");
+    exit(1);
+  }
+  const char *fname = argv[1];
+  FILE *f = safe_fopen(fname, "r");
+#define BUFSIZE 1024
+  char buf[BUFSIZE];
+  if (!fgets(buf, BUFSIZE, f)) {
+    fprintf(stderr, "%s: read error\n", fname);
+    exit(1);
+  }
+  int nline = 0;
+  while (fgets(buf, BUFSIZE, f)) {
+    if (strlen(buf) >= BUFSIZE) {
+      fprintf(stderr, "%s:%d: line too long\n", fname, nline+2);
+      exit(1);
+    }
+    nline++;
+  }
+  fclose(f);
+  int *i_exp = (int *) safe_malloc(nline * sizeof(int));
+  int *i_node = (int *) safe_malloc(nline * sizeof(int));
+  int *outcome = (int *) safe_malloc(nline * sizeof(int));
+  double *value = (double *) safe_malloc(nline * sizeof(double));
+  int *is_perturbation = (int *) safe_malloc(nline * sizeof(int));
+  f = safe_fopen(fname, "r");
+  if (!fgets(buf, BUFSIZE, f)) {
+    fprintf(stderr, "%s: read error\n", fname);
+    exit(1);
+  }
+  nline = 0;
+  while (fgets(buf, BUFSIZE, f)) {
+    if (strlen(buf) >= BUFSIZE) {
+      fprintf(stderr, "%s:%d: line too long\n", fname, nline+2);
+      exit(1);
+    }
+    next_tok(buf, fname, nline+2);
+    i_exp[nline] = atoi(next_tok(0, fname, nline+2));
+    i_node[nline] = atoi(next_tok(0, fname, nline+2));
+    outcome[nline] = atoi(next_tok(0, fname, nline+2));
+    value[nline] = atof(next_tok(0, fname, nline+2));
+    is_perturbation[nline] = atoi(next_tok(0, fname, nline+2)); 
+    nline++;
+  }
+  fclose(f);
+  run_monte_carlo(i_exp, i_node, outcome, value, is_perturbation, nline);
+  return 0;
+}
+
+#if 0
 int main()
 {
     // /scratch/hstern2/retdemo
@@ -237,3 +301,4 @@ int main()
     printf("Time Taken for Test 2 : %f sec\n", total_time2);
     return 0;
 }
+#endif
